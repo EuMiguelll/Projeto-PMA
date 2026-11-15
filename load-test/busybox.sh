@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Teste de carga do enunciado (página Load Testing), adaptado: gera carga DE DENTRO do
 # cluster no /info do gateway. Abra 3 terminais (ver load-test/README.md):
-#   T1: watch -n 1 kubectl get hpa gateway
-#   T2: watch -n 1 kubectl get pods -l app=gateway
+#   T1: kubectl get hpa gateway -w
+#   T2: kubectl get pods -l app=gateway -w
 #   T3: ./load-test/busybox.sh            (Ctrl+C para parar; o pod é removido)
 # Variáveis: TARGET (padrão http://gateway/info), SLEEP (padrão 0.01), WORKERS (padrão 4)
 TARGET=${TARGET:-http://gateway/info}

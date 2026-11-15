@@ -26,4 +26,4 @@ echo "Aguardando o RDS ficar disponível (~10 min)..."
 aws rds wait db-instance-available --db-instance-identifier "$DB"
 HOST=$(aws rds describe-db-instances --db-instance-identifier "$DB" --query 'DBInstances[0].Endpoint.Address' --output text)
 echo "RDS pronto. Implante com:"
-echo "  DATABASE_HOST=$HOST DATABASE_PASSWORD='***' DOCKERHUB_USERNAME=<usuario> ./k8s/deploy.sh"
+echo "  DATABASE_HOST=$HOST ./k8s/deploy.sh   (com o mesmo DATABASE_PASSWORD exportado)"

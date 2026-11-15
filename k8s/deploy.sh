@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # Implanta a plataforma no cluster do contexto atual do kubectl (EKS, kind, minikube...).
-#   DOCKERHUB_USERNAME=<usuario> ./k8s/deploy.sh
+#   ./k8s/deploy.sh                                  # imagens no Amazon ECR da conta do `aws` CLI
+#   DOCKERHUB_USERNAME=<usuario> ./k8s/deploy.sh     # imagens no Docker Hub (ou "local" no kind)
 # Opcionais:
 #   JWT_SECRET_KEY=...            chave do JWT (padrão: gera uma aleatória)
 #   DATABASE_HOST=<endpoint RDS>  usa o RDS em vez do Postgres no cluster
 #   DATABASE_USERNAME / DATABASE_PASSWORD  credenciais do RDS
+#   EXCHANGE_PROVIDER_TOKEN=...   API key da AwesomeAPI (necessária na AWS: sem ela o provedor devolve 429)
 set -euo pipefail
-: "${DOCKERHUB_USERNAME:?defina DOCKERHUB_USERNAME (usuário do Docker Hub com as imagens)}"
 cd "$(dirname "$0")/.."
+# prefixo das imagens: usuário do Docker Hub ou registry do ECR (a conta não fica em nenhum arquivo)
+REGISTRY=${DOCKERHUB_USERNAME:-$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION:-us-east-2}.amazonaws.com}
 
 kubectl apply -f k8s/redis.yaml
 if [[ -z "${DATABASE_HOST:-}" ]]; then
@@ -16,7 +19,7 @@ if [[ -z "${DATABASE_HOST:-}" ]]; then
 fi
 
 for s in account auth exchange gateway; do
-  sed "s#DOCKERHUB_USER#$DOCKERHUB_USERNAME#g" "api/$s-service/k8s/k8s.yaml" | kubectl apply -f -
+  sed "s#DOCKERHUB_USER#$REGISTRY#g" "api/$s-service/k8s/k8s.yaml" | kubectl apply -f -
 done
 
 # segredos reais por cima dos valores de desenvolvimento dos manifests
@@ -27,6 +30,10 @@ if [[ -n "${DATABASE_HOST:-}" ]]; then
   apply_secret account-secrets \
     --from-literal=DATABASE_USERNAME="${DATABASE_USERNAME:-store}" \
     --from-literal=DATABASE_PASSWORD="${DATABASE_PASSWORD:?defina DATABASE_PASSWORD do RDS}"
+fi
+if [[ -n "${EXCHANGE_PROVIDER_TOKEN:-}" ]]; then
+  apply_secret exchange-secrets --from-literal=EXCHANGE_PROVIDER_TOKEN="$EXCHANGE_PROVIDER_TOKEN"
+  kubectl rollout restart deployment/exchange
 fi
 kubectl rollout restart deployment/auth deployment/account
 

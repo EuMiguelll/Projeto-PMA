@@ -16,7 +16,7 @@
 | 0:30–0:55 | terminal | rodar `./scripts/smoke-test.sh http://<elb>` → "registro, login com cookie JWT, conta e câmbio pelo gateway; um header `id-account` forjado é descartado." |
 | 0:55–1:15 | Grafana *Store — Bottlenecks* | "Implementei seis bottlenecks, pelo menos um por serviço: rate limiting no gateway, circuit breaker no auth, cache Redis no account, cache + retry + circuit breaker no exchange, além de observabilidade e scan de vulnerabilidades no CI. Aqui o 429 do rate limit e o hit/miss do cache." |
 | 1:15–1:30 | `kubectl get hpa,pods` com o busybox rodando | "Com carga, o HPA escala o gateway de 1 para várias réplicas." |
-| 1:30–1:45 | slides 6–7 (custos e conclusão) | "O ambiente custa cerca de 32 centavos de dólar por hora; o pipeline do GitHub Actions testa, publica no Docker Hub e faz o deploy no EKS. Obrigado!" |
+| 1:30–1:45 | slides 6–7 (custos e conclusão) | "O ambiente custa cerca de 34 centavos de dólar por hora; o pipeline do GitHub Actions testa, publica no ECR e faz o deploy no EKS. Obrigado!" |
 
 Antes de gravar: `aws/eks-create.sh` + `k8s/deploy.sh` (Runbook passos 3–6), um registro/login
 prévio para o cache ter dados, Grafana aberto (`kubectl port-forward` ou o compose local) e
@@ -32,7 +32,7 @@ extensão *Marp for VS Code*).
 |--:|-------|----------|
 | 1 | Introdução | título, nome, disciplina, objetivo (microsserviços em nuvem com escala automática) |
 | 2 | Arquitetura | diagrama gateway → auth/account/exchange, Postgres, Redis, AwesomeAPI; padrão interface + serviço |
-| 3 | Plataforma | EKS (VPC 2 AZs, node group, ELB), CI/CD (Actions → Docker Hub → EKS), observabilidade |
+| 3 | Plataforma | EKS (VPC 2 AZs, node group, RDS, ELB), CI/CD (Actions → ECR → EKS), observabilidade |
 | 4 | Demonstração | smoke test, Grafana, HPA escalando (vídeo) |
 | 5 | Desafios e bottlenecks | 6 bottlenecks com números medidos; problemas encontrados (`REDIS_PORT`, JVM × HPA, bash 3.2) |
 | 6 | Custos e SLA | US$ 0,32/h (≈ US$ 237/mês), PaaS usados, disponibilidade composta 99,43 % → 99,88 % |

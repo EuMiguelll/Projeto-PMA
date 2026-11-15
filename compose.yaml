@@ -54,6 +54,7 @@ services:
       REDIS_HOST: redis
       # demo do circuit breaker: EXCHANGE_PROVIDER_URL=http://redis:6380 docker compose up -d exchange
       EXCHANGE_PROVIDER_URL: ${EXCHANGE_PROVIDER_URL:-https://economia.awesomeapi.com.br}
+      EXCHANGE_PROVIDER_TOKEN: ${EXCHANGE_PROVIDER_TOKEN:-} # API key da AwesomeAPI (opcional)
 
   gateway:
     <<: *java

@@ -8,9 +8,9 @@
   [AWS Price List](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/index.json)
   (EKS, ELB, EC2, RDS e IPv4 público conferidos nos arquivos oficiais; NAT Gateway, EBS e
   ElastiCache pelas páginas de preço de cada serviço). Impostos não incluídos.
-- Arquitetura exatamente como os scripts criam: template de VPC do enunciado (**2 NAT
-  Gateways**), 2 nós `t3.medium`, Postgres e Redis dentro do cluster, 1 Classic Load Balancer
-  (Service `LoadBalancer` do gateway).
+- Arquitetura exatamente como os scripts criaram no deploy real: template de VPC do enunciado
+  (**2 NAT Gateways**), 2 nós `t3.medium`, **RDS PostgreSQL `db.t4g.micro`**, Redis dentro do
+  cluster, imagens no **ECR** e 1 Classic Load Balancer (Service `LoadBalancer` do gateway).
 
 | Item | Preço unitário |
 |------|----------------|
@@ -43,29 +43,65 @@
 | NAT — dados | 20 GB × 0,045 | 0,90 |
 | IPv4 públicos | 4 (2 NAT + 2 ELB) × 0,005 × 730 | 14,60 |
 | Classic Load Balancer | 0,025 × 730 + 20 GB × 0,008 | 18,41 |
-| Postgres + Redis no cluster | usam os nós | 0,00 |
-| Docker Hub (imagens públicas) | plano gratuito | 0,00 |
+| RDS PostgreSQL `db.t4g.micro` Single-AZ + 20 GB gp3 | 0,016 × 730 + 20 × 0,115 | 13,98 |
+| Redis no cluster | usa os nós | 0,00 |
+| ECR (4 imagens `amd64` + `arm64`, ≈ 1,4 GB) | 1,4 × 0,10 | 0,14 |
 | GitHub Actions + Pages | repositórios públicos | 0,00 |
 | Transferência para a internet | < 100 GB | 0,00 |
-| **Total** | | **≈ 236,55** |
-| **Por hora** | 236,55 ÷ 730 | **≈ 0,32** |
-| + RDS opcional (`db.t4g.micro` Single-AZ + 20 GB gp3) | 0,016 × 730 + 20 × 0,115 | + 13,98 |
+| **Total** | | **≈ 250,67** |
+| **Por hora** | 250,67 ÷ 730 | **≈ 0,34** |
 
 ```mermaid
-pie showData title Cenário A — US$ 236,55/mês
+pie showData title Cenário A — US$ 250,67/mês
     "EKS control plane" : 73.00
     "NAT Gateways (2)" : 66.60
     "Nós EC2 (2 x t3.medium)" : 60.74
     "Load Balancer" : 18.41
     "IPv4 públicos" : 14.60
-    "EBS" : 3.20
+    "RDS" : 13.98
+    "EBS + ECR" : 3.34
 ```
 
-!!! info "Custo real da entrega"
+!!! info "Custo da entrega"
     O projeto não precisa do cluster ligado o mês inteiro: uma sessão de **3 h** (criar, implantar,
-    gravar o teste de carga, destruir) custa **≈ 3 × 0,32 ≈ US$ 1,00**. O maior risco financeiro é
-    **esquecer o cluster ligado** (≈ US$ 7,80 por dia) — por isso o `eks-teardown.sh` e o alerta do
-    AWS Budgets no Runbook.
+    gravar o teste de carga, destruir) custa **≈ 3 × 0,34 ≈ US$ 1,03**. O maior risco financeiro é
+    **esquecer o cluster ligado** (≈ US$ 8,20 por dia) — por isso o `eks-teardown.sh`, o
+    teardown automático de segurança (8 h) e o alerta do AWS Budgets no Runbook.
+
+### Custo real do deploy de 15/11/2026
+
+Recursos criados (UTC): NAT Gateways 21:29, cluster 21:31, nós 21:39, RDS 21:43, ELB 21:48.
+Com tudo ligado, o custo por hora é:
+
+| Item | US$/h |
+|------|------:|
+| EKS control plane | 0,1000 |
+| 2 NAT Gateways | 0,0900 |
+| 2 × `t3.medium` | 0,0832 |
+| Classic Load Balancer | 0,0250 |
+| 4 IPv4 públicos (2 NAT + 2 do ELB, conferidos com `aws ec2 describe-network-interfaces`) | 0,0200 |
+| RDS `db.t4g.micro` + 20 GB gp3 | 0,0192 |
+| EBS 2 × 20 GB gp3 | 0,0044 |
+| **Total** | **≈ 0,342** |
+
+| Cenário | Horas | Custo |
+|---------|------:|------:|
+| Criar, implantar, smoke test e teste de carga (21:29 → 22:30) | ≈ 1 | ≈ US$ 0,34 |
+| Até a gravação do vídeo do HPA e o teardown manual (estimado) | ≈ 4 | ≈ US$ 1,40 |
+| Pior caso: ninguém destrói e o teardown automático roda após 8 h | ≈ 9,5 | ≈ US$ 3,25 |
+
+Some a isso centavos de NAT por GB (pull das imagens do ECR pelos nós, ≈ 1,5 GB × 0,045) e de
+CPU acima do baseline dos `t3` (modo *unlimited*).
+
+**Cost Explorer**: está habilitado na conta e mostrava **US$ 0,00** de 01/11 a 15/11 (nenhum
+recurso antes desta sessão). A AWS publica os custos com ~24 h de atraso, então o valor desta
+sessão aparece a partir de 16–17/11:
+
+```bash
+aws ce get-cost-and-usage --time-period Start=2026-11-15,End=2026-11-18 --granularity DAILY \
+  --metrics UnblendedCost --group-by Type=DIMENSION,Key=SERVICE \
+  --query 'ResultsByTime[].[TimePeriod.Start, Groups[].[Keys[0], Metrics.UnblendedCost.Amount]]'
+```
 
 ### B — Otimizado (mesma arquitetura, mais barato)
 
@@ -73,7 +109,7 @@ pie showData title Cenário A — US$ 236,55/mês
 |---------|--------|--------:|
 | 1 NAT Gateway compartilhado (em vez de 1 por AZ) | −1 NAT, −1 IPv4 | −36,50 |
 | Nós Graviton `t4g.medium` (as imagens já são `arm64` + `amd64`) | −19 % por nó | −11,68 |
-| **Total** | | **≈ 188,37** |
+| **Total** (a partir do A, com RDS e ECR) | | **≈ 202,49** |
 
 Outras alavancas: nós **Spot** (até ~70 % mais baratos, aceitável para dev/teste — o HPA e os
 múltiplos nós toleram a perda de uma instância), **Savings Plans** de 1 ano (~30–40 % em EC2) e
@@ -104,23 +140,26 @@ Para reproduzir (e gerar o link compartilhável) em <https://calculator.aws/#/>,
 2. **Amazon EC2** — 2 instâncias `t3.medium`, Linux, On-Demand, 100 % de uso; EBS gp3 20 GB cada.
 3. **Amazon VPC** — NAT Gateway: 2, 20 GB processados; *Public IPv4 addresses*: 4 em uso.
 4. **Elastic Load Balancing** — Classic Load Balancer: 1, 20 GB processados.
-5. (opcional) **Amazon RDS for PostgreSQL** — `db.t4g.micro`, Single-AZ, On-Demand, 20 GB gp3.
+5. **Amazon RDS for PostgreSQL** — `db.t4g.micro`, Single-AZ, On-Demand, 20 GB gp3.
+6. **Amazon ECR** — 1,4 GB armazenados.
 
-O total deve bater com a tabela A (≈ US$ 236,55/mês; ≈ US$ 250,53 com RDS).
+O total deve bater com a tabela A (≈ US$ 250,67/mês).
 **Link da estimativa:** _a gerar no calculator e colar aqui_.
 
-## 3. Docker Hub × ECR
+## 3. ECR × Docker Hub
 
-| | Docker Hub (usado) | Amazon ECR |
-|-|--------------------|------------|
-| Custo | grátis (repositórios públicos) | US$ 0,10/GB-mês; pull na mesma região grátis |
-| Limite de pull | 10/h por IP sem login; 100/h com login (Personal) | sem limite prático |
-| Privacidade | imagens públicas | privado, IAM (a role dos nós já tem `AmazonEC2ContainerRegistryReadOnly`) |
-| Integração | qualquer cluster/CI | nativa com EKS e IAM |
+| | Amazon ECR (usado no EKS) | Docker Hub (alternativa) |
+|-|---------------------------|--------------------------|
+| Custo | US$ 0,10/GB-mês (≈ US$ 0,14 aqui); pull na mesma região grátis | grátis (repositórios públicos) |
+| Limite de pull | sem limite prático | 10/h por IP sem login; 100/h com login (Personal) |
+| Privacidade | privado, IAM (a role dos nós já tem `AmazonEC2ContainerRegistryReadOnly`) | imagens públicas |
+| Segurança | *scan on push* (vulnerabilidades) grátis | — |
+| Integração | nativa com EKS, IAM e OIDC do GitHub Actions | qualquer cluster/CI |
 
-Escolhi o Docker Hub por ser o padrão da disciplina (hands-on 4) e custo zero; para mitigar o
-limite de pulls, os manifests usam `imagePullPolicy: IfNotPresent` e o CI faz deploy com tag
-imutável. Em produção, **ECR** (custo de centavos) é a escolha.
+No deploy real usei o **ECR** da conta do grupo: não havia Docker Hub configurado, o pull não
+tem limite, as imagens ficam privadas e os nós autenticam pela role do node group, sem segredo
+no cluster. O custo é de centavos. O Docker Hub (padrão do hands-on 4) continua funcionando com
+`DOCKERHUB_USERNAME=<usuario>` nos scripts e no CI.
 
 ## 4. PaaS — onde o projeto usa
 
@@ -137,12 +176,12 @@ flowchart LR
     subgraph paas [PaaS — só usamos]
         elb[Elastic Load Balancing]
         rds[RDS PostgreSQL]
+        ecr[Amazon ECR]
         cf[CloudFormation]
         gha[GitHub Actions]
         pages[GitHub Pages]
     end
     subgraph saas [SaaS / APIs]
-        hub[Docker Hub]
         awesome[AwesomeAPI]
         gh[GitHub]
     end
@@ -153,12 +192,12 @@ flowchart LR
 | **Amazon EKS** | CaaS/PaaS | control plane do Kubernetes | instalação, HA, backup do etcd, upgrades do API server |
 | **Managed node group** | IaaS gerenciado | nós EC2 com AMI otimizada | provisionamento e substituição de nós, drain em upgrades |
 | **Elastic Load Balancing** | PaaS | criado automaticamente pelo `Service` `LoadBalancer` | servidores de balanceamento, health checks, escala do LB |
-| **Amazon RDS** (opcional) | PaaS (DBaaS) | Postgres gerenciado em subnet privada | patches, backups, failover Multi-AZ, storage |
+| **Amazon RDS** | PaaS (DBaaS) | PostgreSQL 17 gerenciado em subnet privada | patches, backups, failover Multi-AZ, storage |
+| **Amazon ECR** | PaaS (registry) | imagens privadas dos 4 serviços, *scan on push* | servidor de registry, storage, autenticação |
 | **CloudFormation** | PaaS (IaC) | VPC do template do enunciado | ordem de criação/remoção de 20+ recursos de rede |
 | **GitHub Actions** | PaaS (CI/CD) | build, teste, imagem, deploy | servidor Jenkins, agentes, plugins |
 | **GitHub Pages** | PaaS (hosting) | esta documentação | servidor web, TLS, CDN |
-| **Docker Hub** | SaaS | registry das imagens | armazenamento e distribuição de imagens |
-| **AwesomeAPI** | SaaS (API) | cotações de câmbio | coleta e atualização das cotações |
+| **AwesomeAPI** | SaaS (API) | cotações de câmbio; a partir da AWS exige API key (grátis até 100 mil req/mês) | coleta e atualização das cotações |
 
 **Alternativas mais "PaaS"**: rodar os 4 contêineres no **ECS Fargate** (sem nós nem control
 plane pago: 4 tarefas de 0,25 vCPU / 0,5 GB ≈ 4 × (0,25 × 0,04048 + 0,5 × 0,004445) × 730 ≈

@@ -53,4 +53,4 @@ echo "==> 6/6 kubeconfig + metrics-server (o HPA precisa das métricas de CPU)"
 aws eks update-kubeconfig --name "$CLUSTER"
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 kubectl get nodes -o wide
-echo "Pronto. Próximo passo: DOCKERHUB_USERNAME=<usuario> ./k8s/deploy.sh"
+echo "Pronto. Próximos passos: ./aws/rds-create.sh e ./k8s/deploy.sh (ver AWS_RUNBOOK.md)"

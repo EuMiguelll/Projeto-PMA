@@ -230,8 +230,9 @@ No Kubernetes, as **probes** de liveness/readiness usam os health groups do Actu
 
 Cada push em `main` de um serviço publica a imagem e roda o **Trivy** sobre ela
 (`aquasec/trivy image --severity HIGH,CRITICAL`). O relatório aparece no log do job
-*Docker Hub (build, push, scan)*; está configurado para **não bloquear** (`--exit-code 0`) —
-trocar para `1` transforma o scan em *gate*. Outras escolhas que reduzem superfície de ataque:
+*Imagem (ECR ou Docker Hub, scan)*; está configurado para **não bloquear** (`--exit-code 0`) —
+trocar para `1` transforma o scan em *gate*. No ECR, os repositórios também têm *scan on push*
+(`aws ecr describe-image-scan-findings --repository-name gateway-service --image-id imageTag=latest`). Outras escolhas que reduzem superfície de ataque:
 imagem base **JRE** (sem compilador), segredos fora do código (Secrets do Kubernetes / GitHub),
 `permissions: contents: read` nos workflows, e o header `id-account` só pode vir do gateway.
 

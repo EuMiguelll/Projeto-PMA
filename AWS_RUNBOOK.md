@@ -6,18 +6,18 @@ VPC via CloudFormation (template `amazon-eks-vpc-private-subnets.yaml`) → role
 cluster EKS → role do node group → node group só nas subnets privadas → kubeconfig.
 
 !!! danger "Isto custa dinheiro"
-    Com 2 nós `t3.medium`, 2 NAT Gateways (do template) e 1 Load Balancer, o ambiente custa
-    **≈ US$ 0,33/hora (≈ US$ 7,90/dia)** enquanto existir — mesmo parado.
+    Com 2 nós `t3.medium`, 2 NAT Gateways (do template), 1 Load Balancer e o RDS `db.t4g.micro`,
+    o ambiente custa **≈ US$ 0,34/hora (≈ US$ 8,20/dia)** enquanto existir — mesmo parado.
     Planeje uma sessão de ~2–3 h (≈ US$ 1) e rode o **passo 9 (teardown)** no final.
     Detalhes na análise de custos (`docs/projeto/custos.md`).
 
 | Passo | O quê | Tempo | Custo |
 |------:|-------|------:|-------|
 | 0 | Ferramentas | 5 min | — |
-| 1 | Usuário IAM, access key, `aws configure`, alerta de orçamento | 10 min | — |
-| 2 | Imagens no Docker Hub | 5 min | — |
+| 1 | Credenciais (SSO ou usuário IAM), alerta de orçamento | 10 min | — |
+| 2 | Imagens no Amazon ECR (`./scripts/push-images.sh`) | 5 min | centavos/mês |
 | 3 | `./aws/eks-create.sh` (VPC + EKS + nós + metrics-server) | 20 min | começa a cobrar |
-| 4 | (opcional) `./aws/rds-create.sh` | 10 min | + US$ 0,02/h |
+| 4 | `./aws/rds-create.sh` (PostgreSQL no RDS) | 10 min | + US$ 0,02/h |
 | 5 | `./k8s/deploy.sh` | 5 min | + Load Balancer |
 | 6 | Smoke test no ELB | 1 min | — |
 | 7 | CI/CD com deploy no EKS | 10 min | — |
@@ -36,7 +36,19 @@ docker --version                   # Docker Desktop ligado (para build/push das 
 
 ## 1. Conta, usuário IAM e credenciais
 
-Seguindo a página *AWS* do enunciado (nunca use o usuário root no dia a dia):
+!!! tip "Conta do grupo no Insper (IAM Identity Center / SSO) — o caminho usado"
+    A conta do grupo já vem com o papel `AdministratorAccess` via SSO; não crie usuário nem access key:
+
+    ```bash
+    aws configure sso          # uma vez: start URL do Insper, região do SSO, conta do grupo, us-east-2
+    aws sso login              # quando a sessão expirar
+    aws sts get-caller-identity
+    ```
+
+    **Nunca** coloque ID da conta, ARNs, chaves ou senhas em arquivos versionados: os scripts
+    descobrem a conta em tempo de execução (`aws sts get-caller-identity`).
+
+Conta própria, seguindo a página *AWS* do enunciado (nunca use o usuário root no dia a dia):
 
 1. Console AWS → **IAM → Users → Create user** (ex.: `enzo-admin`), com acesso ao console.
 2. **Permissions → Attach policies directly → `AdministratorAccess`** (projeto acadêmico; em
@@ -63,38 +75,21 @@ aws budgets create-budget --account-id "$ACCOUNT" \
 !!! tip "AWS Academy / Learner Lab"
     Se a conta não permite criar roles IAM, use a `LabRole` existente:
     `CLUSTER_ROLE_ARN=arn:aws:iam::<conta>:role/LabRole NODE_ROLE_ARN=arn:aws:iam::<conta>:role/LabRole ./aws/eks-create.sh`.
-    As credenciais temporárias incluem `AWS_SESSION_TOKEN` (cadastre também no GitHub).
 
-## 2. Imagens no Docker Hub
+## 2. Imagens no Amazon ECR
 
-O EKS baixa as imagens `DOCKERHUB_USER/<serviço>-service`. Os nós são **x86 (t3)**, então a imagem
-precisa de `linux/amd64` — os dois caminhos abaixo publicam `amd64` + `arm64`.
+Os nós são **x86 (t3)**, então a imagem precisa de `linux/amd64`; o script publica `amd64` +
+`arm64`. O ECR da própria conta é o registry padrão: a role dos nós já tem
+`AmazonEC2ContainerRegistryReadOnly` (sem `imagePullSecrets`) e não há limite de pulls.
 
-=== "Via CI (recomendado)"
+```bash
+./scripts/build.sh            # gera os target/*.jar
+./scripts/push-images.sh      # cria os repositórios <serviço>-service (scan on push) e faz o push
+aws ecr describe-images --repository-name gateway-service --query 'imageDetails[].imageTags'
+```
 
-    Em cada repositório de serviço (`account-service`, `auth-service`, `exchange-service`,
-    `gateway-service`): *Settings → Secrets and variables → Actions*:
-
-    - **Variable** `DOCKERHUB_USERNAME` = seu usuário do Docker Hub
-    - **Secret** `DOCKERHUB_TOKEN` = token criado em *Docker Hub → Account settings → Personal access tokens* (Read & Write)
-
-    Com o `gh`:
-
-    ```bash
-    for r in account-service auth-service exchange-service gateway-service; do
-      gh variable set DOCKERHUB_USERNAME -b "<usuario>" -R "<owner>/$r"
-      gh secret set DOCKERHUB_TOKEN -b "<token>" -R "<owner>/$r"
-      gh workflow run ci.yml -R "<owner>/$r"
-    done
-    ```
-
-=== "Manual (da sua máquina)"
-
-    ```bash
-    ./scripts/build.sh                                   # gera os target/*.jar
-    docker login
-    DOCKERHUB_USERNAME=<usuario> ./scripts/push-images.sh
-    ```
+Alternativa Docker Hub: `docker login && DOCKERHUB_USERNAME=<usuario> ./scripts/push-images.sh`
+(e o mesmo `DOCKERHUB_USERNAME` no passo 5). Pelo CI: passo 7.
 
 ## 3. Criar VPC + cluster EKS + node group
 
@@ -123,14 +118,15 @@ kubectl get nodes -o wide          # 2 nós Ready, IPs 192.168.128.x / 192.168.1
 kubectl top nodes                  # metrics-server ok (leva ~1 min)
 ```
 
-## 4. (Opcional) Banco gerenciado — Amazon RDS
+## 4. Banco gerenciado — Amazon RDS
 
-Por padrão o Postgres roda **dentro do cluster** (`k8s/postgres.yaml`, mais barato, sem
-persistência). Para usar o RDS (PaaS, backups, patching gerenciado):
+A página *EKS* do enunciado pede o banco no **Amazon RDS ou DynamoDB**; o mais barato que cumpre é
+o RDS PostgreSQL `db.t4g.micro` (≈ US$ 0,016/h). O Postgres **dentro do cluster**
+(`k8s/postgres.yaml`) fica só para kind/minikube.
 
 ```bash
-DATABASE_PASSWORD='uma-senha-forte' ./aws/rds-create.sh
-# imprime o DATABASE_HOST a usar no passo 5
+export DATABASE_PASSWORD=$(openssl rand -hex 16)   # só no shell; nunca em arquivo versionado
+./aws/rds-create.sh                                # imprime o DATABASE_HOST a usar no passo 5
 ```
 
 Cria `db.t4g.micro` PostgreSQL 17, 20 GB gp3, Single-AZ, **sem IP público**, nas subnets privadas,
@@ -139,16 +135,15 @@ com security group liberando a porta 5432 só para os nós do EKS.
 ## 5. Implantar a plataforma
 
 ```bash
-export DOCKERHUB_USERNAME=<usuario>
-export JWT_SECRET_KEY=$(openssl rand -base64 32)       # guarde se quiser manter as sessões
-./k8s/deploy.sh
-# com RDS:
-# DATABASE_HOST=<endpoint> DATABASE_PASSWORD='...' ./k8s/deploy.sh
+DATABASE_HOST=<endpoint do passo 4> ./k8s/deploy.sh   # usa o $DATABASE_PASSWORD exportado no passo 4
+# imagens no Docker Hub: DOCKERHUB_USERNAME=<usuario> ...; sem RDS (kind): omita DATABASE_HOST
 ```
 
-O script aplica `k8s/redis.yaml`, `k8s/postgres.yaml` (se não houver RDS) e o
+O script troca o prefixo `DOCKERHUB_USER` dos manifests pelo registry do ECR da conta (descoberto
+na hora), aplica `k8s/redis.yaml`, `k8s/postgres.yaml` (só sem RDS) e o
 `api/<serviço>/k8s/k8s.yaml` de cada serviço (Secret, ConfigMap, Deployment, Service, HPA),
-sobrescreve os segredos de desenvolvimento e espera os rollouts. No fim imprime a URL do ELB.
+sobrescreve os segredos de desenvolvimento (JWT aleatório, senha do RDS) e espera os rollouts.
+No fim imprime a URL do ELB.
 
 ```bash
 kubectl get pods,svc,hpa
@@ -169,38 +164,43 @@ curl http://$ELB/info
     `curl`/k6/smoke test enviam o cookie explicitamente; **um navegador só o reenvia por HTTPS**
     (para isso: Ingress com ALB + certificado do ACM, seção 10).
 
-## 7. CI/CD: deploy automático no EKS
+## 7. CI/CD: imagem no ECR e deploy automático no EKS
 
-O job `deploy` dos workflows faz `kubectl set image deployment/<serviço> <serviço>=<imagem>:<sha>`
-e `kubectl rollout status`. Ele só roda se a variável `EKS_CLUSTER` existir. Crie um usuário
-dedicado, com acesso mínimo:
+O job `image` publica no ECR (ou no Docker Hub) e o `deploy` faz
+`kubectl set image deployment/<serviço> <serviço>=<imagem>:<sha>` + `kubectl rollout status`.
+Sem chave fixa: o GitHub Actions troca o token **OIDC** do workflow por credenciais temporárias de
+uma role que só aceita os repositórios de serviço na branch `main`.
 
 ```bash
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
-aws iam create-user --user-name github-deployer
-aws iam put-user-policy --user-name github-deployer --policy-name eks-describe \
+aws iam create-open-id-connect-provider --url https://token.actions.githubusercontent.com \
+  --client-id-list sts.amazonaws.com
+aws iam create-role --role-name github-actions-store --assume-role-policy-document '{
+  "Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"sts:AssumeRoleWithWebIdentity",
+  "Principal":{"Federated":"arn:aws:iam::'"$ACCOUNT"':oidc-provider/token.actions.githubusercontent.com"},
+  "Condition":{"StringEquals":{"token.actions.githubusercontent.com:aud":"sts.amazonaws.com"},
+               "StringLike":{"token.actions.githubusercontent.com:sub":"repo:<owner>/*-service:ref:refs/heads/main"}}}]}'
+aws iam attach-role-policy --role-name github-actions-store \
+  --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+aws iam put-role-policy --role-name github-actions-store --policy-name eks-describe \
   --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"eks:DescribeCluster","Resource":"*"}]}'
-aws iam create-access-key --user-name github-deployer          # anote AccessKeyId/SecretAccessKey
 aws eks create-access-entry --cluster-name eks-store \
-  --principal-arn arn:aws:iam::$ACCOUNT:user/github-deployer
+  --principal-arn "arn:aws:iam::$ACCOUNT:role/github-actions-store"
 aws eks associate-access-policy --cluster-name eks-store \
-  --principal-arn arn:aws:iam::$ACCOUNT:user/github-deployer \
+  --principal-arn "arn:aws:iam::$ACCOUNT:role/github-actions-store" \
   --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSEditPolicy \
   --access-scope type=namespace,namespaces=default
-```
 
-Cadastre nos 4 repositórios de serviço:
-
-```bash
 for r in account-service auth-service exchange-service gateway-service; do
+  gh variable set AWS_ECR -b true -R "<owner>/$r"
   gh variable set EKS_CLUSTER -b eks-store -R "<owner>/$r"
-  gh variable set AWS_REGION -b us-east-2 -R "<owner>/$r"
-  gh secret set AWS_ACCESS_KEY_ID -b "<AccessKeyId>" -R "<owner>/$r"
-  gh secret set AWS_SECRET_ACCESS_KEY -b "<SecretAccessKey>" -R "<owner>/$r"
+  gh secret set AWS_ROLE_ARN -b "arn:aws:iam::$ACCOUNT:role/github-actions-store" -R "<owner>/$r"
 done
 ```
 
-Teste: um commit em `main` de qualquer serviço → Actions: **Build & Test → Docker Hub → Deploy EKS**.
+O ARN vai como **secret** (mascarado nos logs) e o workflow usa `mask-aws-account-id: true`, então o
+ID da conta não aparece nos logs públicos. Teste: um commit em `main` de qualquer serviço →
+Actions: **Build & Test → Imagem → Deploy EKS**.
 
 ## 8. Teste de carga e vídeo do HPA
 
@@ -214,14 +214,38 @@ busybox do enunciado) e a alternativa com k6.
 ```
 
 Remove, nesta ordem: Service `LoadBalancer`/Ingress (libera o ELB) → RDS (se houver) →
-node group → cluster → stack da VPC (subnets, NAT Gateways, Elastic IPs). As roles IAM ficam
-(não custam nada). Depois confira no console, região **us-east-2**:
+node group → cluster → stack da VPC (subnets, NAT Gateways, Elastic IPs) → repositórios do ECR.
+As roles IAM ficam (não custam nada). Antes de começar, o script aponta o `kubectl` para o
+`eks-store` (`aws eks update-kubeconfig`), para não apagar nada de outro cluster.
+
+**Teardown de segurança** (caso alguém esqueça o cluster ligado): agende ao terminar o deploy,
+na pasta do repositório. Em 8 h ele roda o `eks-teardown.sh`, a menos que exista `~/KEEP_EKS`.
+
+```bash
+perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV' \
+  nohup caffeinate -i sh -c 'sleep 28800; [ -f ~/KEEP_EKS ] || ./aws/eks-teardown.sh' \
+  > ~/eks-teardown.log 2>&1 < /dev/null & echo $! > ~/eks-teardown.pid
+ps -o pid,pgid,command -g "$(cat ~/eks-teardown.pid)"    # sh, caffeinate e sleep no mesmo grupo
+```
+
+- **Manter o cluster**: `touch ~/KEEP_EKS`. **Cancelar o agendamento**:
+  `kill -- -$(cat ~/eks-teardown.pid)` (o `-` mata o grupo todo; matar só o `sleep` dispararia o
+  teardown na hora).
+- `setsid` põe o processo numa sessão própria (sobrevive ao fechar o terminal);
+  `caffeinate -i` impede o repouso por inatividade, mas **fechar a tampa na bateria suspende o
+  Mac** e atrasa o relógio do `sleep`.
+- As credenciais precisam valer na hora: com SSO, as do papel ficam em cache por até 12 h
+  (`jq -r .Credentials.Expiration ~/.aws/cli/cache/*.json`). Depois disso só com `aws sso login`.
+- Log em `~/eks-teardown.log`.
+
+Depois confira no console, região **us-east-2**:
 
 - [ ] EKS → Clusters: vazio
 - [ ] EC2 → Instances, Load Balancers, NAT Gateways, Elastic IPs, Volumes: vazios
 - [ ] RDS → Databases: vazio
 - [ ] CloudFormation → Stacks: sem `eks-store-vpc`
-- [ ] (opcional) IAM → `github-deployer` → desative a access key
+- [ ] ECR → Repositories: vazio
+- [ ] (opcional) IAM → role `github-actions-store` e o provedor OIDC do GitHub
 
 ## 10. (Opcional) Ingress com ALB e HTTPS
 
@@ -254,7 +278,8 @@ teardown (o script já faz isso).
 | Sintoma | Causa provável | Solução |
 |---------|----------------|---------|
 | Pod `Pending` | CPU/memória insuficiente nos nós | `kubectl describe pod`; reduza `maxReplicas` do HPA ou aumente o node group (`aws eks update-nodegroup-config --scaling-config desiredSize=3 ...`) |
-| `ImagePullBackOff` | nome/tag errado, imagem só `arm64`, limite de pulls do Docker Hub | confira `DOCKERHUB_USERNAME`, publique `linux/amd64`; use `imagePullSecrets` ou ECR |
+| `ImagePullBackOff` | nome/tag errado, imagem só `arm64`, limite de pulls do Docker Hub | `kubectl describe pod`; publique `linux/amd64` no ECR (`./scripts/push-images.sh`) |
+| `ExpiredToken` / `kubectl` pede login | sessão SSO expirou | `aws sso login` |
 | HPA `cpu: <unknown>/50%` | metrics-server ausente ou iniciando | `kubectl get deploy -n kube-system metrics-server`; aguarde 1–2 min |
 | `account` em `CrashLoopBackOff` | banco inacessível | `kubectl logs deploy/account`; Postgres pronto? endpoint/SG do RDS? |
 | `EXTERNAL-IP <pending>` | ELB sendo criado / subnets sem tag | aguarde 2–3 min; o template já marca as subnets públicas |

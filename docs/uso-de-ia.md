@@ -11,8 +11,8 @@ entrega e as regras de trabalho.
 |-------|----------------|---------------------|
 | Leitura do enunciado | leu as páginas do projeto, de bottlenecks, os hands-on e o template de documentação | conferência das versões e convenções (Spring Boot 4.1.1, Spring Cloud 2025.1.3, nomes e endpoints) |
 | Código dos 7 módulos | escreveu interfaces, serviços, testes, `Dockerfile` e manifests | `./mvnw` com testes em cada módulo; imagens construídas |
-| Integração | `compose.yaml`, smoke test, Prometheus/Grafana | smoke test 15/15 no compose e no kind; bottlenecks forçados ao vivo (Redis, circuitos, 429) |
-| Kubernetes / AWS | manifests, `deploy.sh`, scripts de EKS/RDS/teardown, Runbook | `kubeconform`, `shellcheck`, deploy real num cluster kind; **AWS não executada** (sem credenciais) |
+| Integração | `compose.yaml`, smoke test, Prometheus/Grafana | smoke test 14/14 no compose e no kind; bottlenecks forçados ao vivo (Redis, circuitos, 429) |
+| Kubernetes / AWS | manifests, `deploy.sh`, scripts de EKS/RDS/teardown, Runbook | `kubeconform`, `shellcheck`, deploy em kind e **deploy real no EKS** (conta do grupo, 15/11/2026): smoke test pelo ELB e HPA 1 → 10 |
 | CI/CD | workflows do GitHub Actions | `actionlint`; ainda não rodaram no GitHub |
 | Custos | consultou a AWS Price List e montou os cenários | valores conferidos nos arquivos oficiais de preço |
 | Documentação | este site, roteiro do vídeo e slides | `mkdocs build --strict` |
@@ -29,7 +29,9 @@ A IA errou e só percebeu porque tudo foi executado, não apenas escrito:
 - uma checagem de segurança passava por engano (`null == null`) e foi reescrita;
 - no Kubernetes, a variável `REDIS_PORT=tcp://…` injetada pelo Service `redis` derrubava três
   serviços — invisível no Docker Compose, só apareceu no teste em kind;
-- uma variável de zsh (`$img:latest`) virou `atest` por causa do modificador `:l`.
+- uma variável de zsh (`$img:latest`) virou `atest` por causa do modificador `:l`;
+- no EKS, a AwesomeAPI devolveu `429 QuotaExceeded` para os IPs dos NAT Gateways (do Mac, 200):
+  só o deploy real mostrou que o exchange precisa de API key na nuvem.
 
 ## Responsabilidade do aluno
 
@@ -38,6 +40,6 @@ deve:
 
 - [ ] ler o código de cada serviço e saber explicar o fluxo JWT (login → cookie → `/auth/solve` → `id-account`);
 - [ ] saber justificar cada bottleneck e os números medidos;
-- [ ] executar o [AWS Runbook](projeto/runbook.md) por conta própria e gravar os vídeos;
+- [ ] reler o [AWS Runbook](projeto/runbook.md) e as evidências do deploy real, e gravar os vídeos;
 - [ ] revisar os custos no AWS Pricing Calculator e colar o link da estimativa;
 - [ ] completar as [atividades](atividades.md) feitas em aula que não estão aqui.

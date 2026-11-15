@@ -59,7 +59,7 @@ Todos expõem `/<prefixo>/actuator/health/{liveness,readiness}` (probes do Kuber
 | Observabilidade | Actuator + Micrometer → Prometheus → Grafana |
 | Build | Maven Wrapper (`./mvnw`), Docker (`eclipse-temurin:25-jre`) |
 | Orquestração | Docker Compose (local), Kubernetes / Amazon EKS |
-| CI/CD | GitHub Actions → Docker Hub → EKS |
+| CI/CD | GitHub Actions → Amazon ECR (ou Docker Hub) → EKS |
 
 ## Fluxo de uma requisição autenticada
 

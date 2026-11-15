@@ -7,6 +7,8 @@ limiting, então a carga vira CPU e não `429`.
 ## Pré-requisitos
 
 - Plataforma no ar (`./k8s/deploy.sh`) e **metrics-server** (o `eks-create.sh` instala).
+- `kubectl` apontando para o cluster: `aws eks update-kubeconfig --name eks-store` (com SSO
+  expirado: `aws sso login`).
 - HPA do gateway já vem no manifest (`api/gateway-service/k8s/k8s.yaml`):
   CPU 50 % do *request* (200m), `minReplicas: 1`, `maxReplicas: 10` — equivalente ao
   `kubectl autoscale deployment gateway --cpu-percent=50 --min=1 --max=10` do enunciado.
@@ -16,8 +18,7 @@ limiting, então a carga vira CPU e não `429`.
 === "1. HPA"
 
     ```bash
-    kubectl get hpa gateway
-    watch -n 1 kubectl get hpa gateway
+    kubectl get hpa gateway -w
     # NAME      REFERENCE            TARGETS       MINPODS   MAXPODS   REPLICAS
     # gateway   Deployment/gateway   cpu: 2%/50%   1         10        1
     ```
@@ -25,8 +26,11 @@ limiting, então a carga vira CPU e não `429`.
 === "2. Pods"
 
     ```bash
-    watch -n 1 kubectl get pods -l app=gateway -o wide
+    kubectl get pods -l app=gateway -o wide -w
     ```
+
+(`-w` é o *watch* nativo do kubectl: imprime uma linha nova a cada mudança; o macOS não traz o
+comando `watch`.)
 
 === "3. Carga (busybox do enunciado)"
 
@@ -51,15 +55,18 @@ O resumo final mostra `http_reqs`, latência p(95) e os *checks*.
 
 ## Roteiro de gravação (≈ 1 min de tela)
 
+Tempos medidos no EKS (2 × `t3.medium`) em 15/11/2026:
+
 | Tempo | Tela | Fala (resumo) |
 |------:|------|---------------|
-| 0:00 | 3 terminais lado a lado, HPA em `1/50%`, 1 pod | "Gateway com HPA: 50 % de CPU, de 1 a 10 réplicas." |
+| 0:00 | 3 terminais lado a lado, HPA em `1%/50%`, 1 pod | "Gateway no EKS com HPA: 50 % de CPU, de 1 a 10 réplicas." |
 | 0:10 | inicia `./load-test/busybox.sh` | "Carga de dentro do cluster no /info, 4 loops sem pausa." |
-| 0:25 | TARGETS sobe (ex.: `180%/50%`) | "A CPU passa do alvo; o HPA calcula novas réplicas." |
-| 0:40 | pods novos `ContainerCreating` → `Running` | "Novas réplicas sobem; o Service distribui a carga." |
-| 0:55 | TARGETS volta para perto de 50 % | "Com mais pods, a CPU por pod cai." |
-| 1:05 | Ctrl+C na carga | "Fim da carga; após ~5 min o HPA reduz as réplicas (janela de estabilização)." |
+| 0:40 | TARGETS sobe para `~160%/50%` | "A CPU passa do alvo; o HPA calcula novas réplicas." |
+| 0:55 | `REPLICAS` 4, pods `ContainerCreating` → `Running` | "Novas réplicas sobem; o Service distribui a carga." |
+| 1:30 | 8 → **10** réplicas, TARGETS cai para `30–45%` | "Com mais pods, a CPU por pod fica abaixo do alvo." |
+| 1:45 | Ctrl+C na carga | "Fim da carga; depois da janela de estabilização (~4–6 min) o HPA volta para 1." |
 
 Dicas: `kubectl top pods -l app=gateway` mostra a CPU por pod; o scale-down é lento de propósito
 (`behavior.scaleDown.stabilizationWindowSeconds` = 300 s por padrão). Para mostrar o
-scale-down no vídeo, acelere a gravação nesse trecho.
+scale-down no vídeo, acelere a gravação nesse trecho. Para recomeçar do zero entre tomadas:
+`kubectl scale deployment gateway --replicas=1` (o HPA aceita, já que está sem carga).

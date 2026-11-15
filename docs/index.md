@@ -39,11 +39,12 @@ flowchart LR
 - [x] **Bottlenecks** (6, com evidências medidas) — [Bottlenecks](projeto/bottlenecks.md)
 - [x] `docker compose` local + smoke test ponta a ponta — [Execução local](projeto/local.md)
 - [x] Manifests **Kubernetes** (Secret, ConfigMap, Deployment, Service, HPA, Ingress) + scripts **EKS** (criação com o template de VPC do enunciado e teardown) — [AWS e EKS](projeto/eks.md), [Runbook](projeto/runbook.md)
-- [x] **CI/CD** GitHub Actions: build, testes, imagem multi-arch no Docker Hub, Trivy e deploy no EKS — [CI/CD](projeto/cicd.md)
+- [x] **CI/CD** GitHub Actions: build, testes, imagem multi-arch no ECR (ou Docker Hub), Trivy e deploy no EKS — [CI/CD](projeto/cicd.md)
 - [x] **Teste de carga** (busybox do enunciado + k6) e roteiro do vídeo do HPA — [Teste de carga](projeto/load-testing.md)
 - [x] **Custos, PaaS e SLA** (us-east-2, preços da AWS Price List) — [Custos](projeto/custos.md)
 - [x] Apresentação (slides) e roteiro do vídeo de 1–2 min — [Apresentação](projeto/apresentacao.md)
-- [ ] Execução real no EKS (cluster criado, ELB público) — depende das credenciais AWS
+- [x] **Execução real no EKS** (15/11/2026): cluster `eks-store` 1.37, 2 × `t3.medium`, RDS PostgreSQL, imagens no ECR, ELB público, HPA do gateway 1 → 10 réplicas — [AWS e EKS](projeto/eks.md#deploy-real-no-eks-15112026), [Teste de carga](projeto/load-testing.md#resultado-no-eks)
+- [ ] API key da AwesomeAPI no EKS (a API recusa IPs da AWS sem chave; o câmbio funciona no compose)
 - [ ] Vídeo do teste de carga com HPA no EKS e vídeo de apresentação (1–2 min)
 
 ## Repositórios

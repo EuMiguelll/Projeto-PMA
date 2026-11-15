@@ -2,6 +2,66 @@
 
 --8<-- "load-test/README.md:3:"
 
+## Resultado no EKS
+
+Cluster `eks-store` (2 × `t3.medium`, us-east-2), 15/11/2026. Dois testes: o do enunciado
+(busybox dentro do cluster) e o k6 pelo **Load Balancer público**.
+
+### 1. busybox do enunciado → HPA de 1 para 10 réplicas
+
+`./load-test/busybox.sh` (4 loops de `wget http://gateway/info` sem pausa) das 22:04:48 às
+22:09:13 UTC:
+
+| Hora (UTC) | HPA do gateway (`kubectl get hpa`) | O que aconteceu |
+|-----------:|------------------------------------|-----------------|
+| 22:04:38 | `cpu: 3%/50%`, 1 réplica | antes da carga |
+| 22:05:18 | `cpu: 162%/50%` → **4** | primeira leitura com carga: `SuccessfulRescale New size: 4` |
+| 22:06:11 | `cpu: 123%/50%` → **8** | as 4 réplicas ainda acima do alvo |
+| 22:06:25 | `cpu: 88%/50%` → **10** | máximo do HPA, **~80 s após o início** |
+| 22:07:30–22:09 | `cpu: 33–47%/50%`, 10 réplicas | estável: ~40–95m de CPU por pod, nós a 42 % e 20 % de CPU |
+| 22:09:13 | — | fim da carga |
+| 22:12:45–22:15:04 | 10 → 9 → 7 → 2 → **1** | scale-down depois da janela de estabilização (300 s desde a última recomendação alta) |
+
+```text
+NAME      REFERENCE            TARGETS        MINPODS   MAXPODS   REPLICAS
+gateway   Deployment/gateway   cpu: 41%/50%   1         10        10
+```
+
+??? example "Evidência completa: linha do tempo, `kubectl top`, pods e eventos do HPA"
+
+    ```text
+    --8<-- "docs/evidencias/hpa-busybox.txt"
+    ```
+
+### 2. k6 pelo Load Balancer
+
+`load-test/k6.js` com 100 VUs (rampa de 30 s, platô de 2 min) no `/info` + 2 usuários no fluxo
+autenticado, contra `http://<elb>`. O k6 rodou como pod no próprio cluster (sem pesar no Mac),
+mas pelo DNS público do ELB: as requisições saem pelo NAT e entram pelo Classic Load Balancer.
+
+| Métrica | Resultado |
+|---------|-----------|
+| Requisições | **406.170** em ~3 min (**2.215 req/s**) |
+| Latência `/info` | média 37 ms · mediana 22 ms · **p95 123 ms** · máx. 921 ms |
+| Erros `/info` | **0,00 %** (thresholds `p(95)<800ms` e `rate<0.01` ✓) |
+| Fluxo autenticado | login 100 % · `/auth/me` 98 % (2 de 180 falharam no pico) · câmbio 0 % (AwesomeAPI devolve 429 para a AWS, ver [AWS e EKS](eks.md#deploy-real-no-eks-15112026)) |
+| HPA do gateway | 1 → 4 → 8 → **10 em ~47 s**; CPU por pod ainda em ~100–200 % no máximo de réplicas |
+
+!!! warning "Limite encontrado: memória do node group"
+    Com 5× mais carga que o busybox, os HPAs de `account`, `exchange` e `auth` também subiram, e
+    os requests de memória chegaram a **97 % e 89 %** dos 2 nós: 2 réplicas do gateway e 1 do
+    auth ficaram `Pending` (`0/2 nodes are available: 2 Insufficient memory`). O HPA escala
+    **pods**, não **nós**: no EKS isso exige o Cluster Autoscaler ou o Karpenter (o node group já
+    aceita até 3 nós). Outras saídas: nós `t3.large` (8 GiB), requests de memória menores
+    para as JVMs ou `maxReplicas` coerente com a capacidade. Para o vídeo, o busybox do
+    enunciado cabe nos 2 nós (10 réplicas, todas `Running`).
+
+??? example "Evidência completa do k6 (resumo, HPA e pods `Pending`)"
+
+    ```text
+    --8<-- "docs/evidencias/k6-elb.txt"
+    ```
+
 ## Resultado no Kubernetes local (kind)
 
 Antes de gastar no EKS, os mesmos manifests e o mesmo `k8s/deploy.sh` foram executados num
@@ -11,7 +71,7 @@ cluster **kind** (Kubernetes 1.37, 1 nó, metrics-server com `--kubelet-insecure
 | Etapa | Resultado |
 |-------|-----------|
 | `DOCKERHUB_USERNAME=local ./k8s/deploy.sh` | 4 serviços + Postgres + Redis `Running`, probes OK |
-| `./scripts/smoke-test.sh http://localhost:18080` (via `port-forward svc/gateway`) | **15/15 OK** |
+| `./scripts/smoke-test.sh http://localhost:18080` (via `port-forward svc/gateway`) | **14/14 OK** |
 | busybox (4 workers, `http://gateway/info`) por 3 min | HPA do gateway: **1 → 4 réplicas** (`SuccessfulRescale ... cpu resource utilization above target`); com a carga dividida, ≈ 55m CPU por pod (29 % do *request*) e a escala estabilizou |
 
 ```text
