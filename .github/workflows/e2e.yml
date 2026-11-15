@@ -1,0 +1,32 @@
+name: E2E
+
+# Sobe a plataforma inteira (submódulos) com docker compose e roda o smoke test pelo gateway.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Build & test (7 módulos, mvnw)
+        run: ./scripts/build.sh
+      - name: docker compose up
+        run: docker compose up -d --build db redis account auth exchange gateway
+      - name: Smoke test
+        run: ./scripts/smoke-test.sh
+      - name: Logs
+        if: failure()
+        run: docker compose logs
