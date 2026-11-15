@@ -22,14 +22,15 @@ if [[ -n "$SG" && "$SG" != None ]]; then # a ENI do RDS demora um pouco para ser
   for _ in $(seq 10); do aws ec2 delete-security-group --group-id "$SG" && break; sleep 30; done
 fi
 
-echo "==> 3/6 Node group (~5 min)"
-aws eks delete-nodegroup --cluster-name "$CLUSTER" --nodegroup-name "$CLUSTER-nodes" >/dev/null 2>&1 && \
-  aws eks wait nodegroup-deleted --cluster-name "$CLUSTER" --nodegroup-name "$CLUSTER-nodes"
+echo "==> 3/6 Node groups (~5 min)"
+NGS=$(aws eks list-nodegroups --cluster-name "$CLUSTER" --query 'nodegroups[]' --output text 2>/dev/null)
+for ng in $NGS; do aws eks delete-nodegroup --cluster-name "$CLUSTER" --nodegroup-name "$ng" >/dev/null; done
+for ng in $NGS; do aws eks wait nodegroup-deleted --cluster-name "$CLUSTER" --nodegroup-name "$ng"; done
 
 echo "==> 4/6 Cluster (~5 min)"
 aws eks delete-cluster --name "$CLUSTER" >/dev/null 2>&1 && aws eks wait cluster-deleted --name "$CLUSTER"
 
-echo "==> 5/6 VPC (CloudFormation: subnets, NAT gateways, elastic IPs)"
+echo "==> 5/6 VPC (CloudFormation: subnets, NAT gateway, elastic IP)"
 aws cloudformation delete-stack --stack-name "$CLUSTER-vpc"
 aws cloudformation wait stack-delete-complete --stack-name "$CLUSTER-vpc"
 

@@ -1,4 +1,7 @@
 ---
+# Template do enunciado com UMA mudança para reduzir custo: um único NAT Gateway (AZ1) para as
+# duas subnets privadas, em vez de um por AZ. Economiza US$ 0,05/h (NAT + IPv4 público); o preço
+# é que, se a AZ1 cair, os pods da AZ2 perdem a saída para a internet (o ELB segue funcionando).
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Amazon EKS Sample VPC - Private and Public subnets'
 
@@ -113,12 +116,12 @@ Resources:
   PrivateRoute02:
     DependsOn:
     - VPCGatewayAttachment
-    - NatGateway02
+    - NatGateway01
     Type: AWS::EC2::Route
     Properties:
       RouteTableId: !Ref PrivateRouteTable02
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NatGateway02
+      NatGatewayId: !Ref NatGateway01
 
   NatGateway01:
     DependsOn:
@@ -133,27 +136,7 @@ Resources:
       - Key: Name
         Value: !Sub '${AWS::StackName}-NatGatewayAZ1'
 
-  NatGateway02:
-    DependsOn:
-    - NatGatewayEIP2
-    - PublicSubnet02
-    - VPCGatewayAttachment
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId: !GetAtt 'NatGatewayEIP2.AllocationId'
-      SubnetId: !Ref PublicSubnet02
-      Tags:
-      - Key: Name
-        Value: !Sub '${AWS::StackName}-NatGatewayAZ2'
-
   NatGatewayEIP1:
-    DependsOn:
-    - VPCGatewayAttachment
-    Type: 'AWS::EC2::EIP'
-    Properties:
-      Domain: vpc
-
-  NatGatewayEIP2:
     DependsOn:
     - VPCGatewayAttachment
     Type: 'AWS::EC2::EIP'
