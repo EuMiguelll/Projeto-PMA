@@ -24,6 +24,8 @@ jobs:
       - name: Build & test (7 módulos, mvnw)
         run: ./scripts/build.sh
       - name: docker compose up
+        env: # IPs de nuvem recebem 429 da AwesomeAPI sem API key
+          EXCHANGE_PROVIDER_TOKEN: ${{ secrets.EXCHANGE_PROVIDER_TOKEN }}
         run: docker compose up -d --build db redis account auth exchange gateway
       - name: Smoke test
         run: ./scripts/smoke-test.sh
