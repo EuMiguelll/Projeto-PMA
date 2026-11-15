@@ -33,8 +33,8 @@ Internet ──► gateway (Spring Cloud Gateway: JWT + rate limit)
 
 ## Plataforma
 
-- **EKS** em us-east-2 (deploy real): VPC do template (2 AZs, subnets privadas), 2 × `t3.medium`,
-  RDS PostgreSQL `db.t4g.micro`, imagens no ECR, ELB público
+- **EKS** em us-east-2 (deploy real): VPC do template (2 AZs, subnets privadas, 1 NAT),
+  2 × `t3.medium` **Spot**, Postgres no cluster (RDS validado no 1º deploy), ECR com lifecycle, 1 ELB
 - **Kubernetes**: Deployment + probes, Service, ConfigMap/Secret, **HPA** (CPU 50 %)
 - **CI/CD** (GitHub Actions): testes → imagem multi-arch no ECR (OIDC, sem chave) → Trivy → `kubectl set image :sha`
 - **Local**: `docker compose up` (Postgres, Redis, Prometheus, Grafana) + smoke test 14/14
@@ -68,10 +68,11 @@ brace expansion do bash 3.2 no smoke test
 
 ## Custos e SLA (us-east-2)
 
-- **≈ US$ 0,34/h — US$ 251/mês**: EKS 73 · NAT 67 · EC2 61 · LB 18 · IPv4 15 · RDS 14 · EBS+ECR 3
-- Deploy real (~4 h ligado): **≈ US$ 1,40**; otimizado (1 NAT, Graviton): US$ 202/mês
+- 1º deploy: US$ 0,34/h (US$ 251/mês) → **otimizado: ≈ US$ 0,21/h (US$ 155/mês, −38 %)**
+- Spot −0,062/h · 1 NAT −0,05/h · sem RDS −0,019/h · ECR com lifecycle · teardown automático 3 h
+- Agora: EKS 73 · NAT 34 · LB 18 · EC2 Spot 15 · IPv4 11 · EBS+ECR 3 · deploy real ≈ **US$ 1,15** (pior caso)
 - PaaS: EKS, ELB, RDS, ECR, CloudFormation, GitHub Actions/Pages
-- Disponibilidade composta: **99,43 %** (RDS Single-AZ) → **99,88 %** (Multi-AZ)
+- Disponibilidade composta (produção): **99,43 %** (RDS Single-AZ) → **99,88 %** (Multi-AZ)
 - SLO 99,5 % · SLA 99,0 %
 
 ---
