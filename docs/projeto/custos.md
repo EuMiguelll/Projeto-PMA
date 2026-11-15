@@ -89,7 +89,8 @@ Feitas em 15/11/2026, entre 22:40 e 23:00 UTC, com o cluster no ar.
 
 A troca foi feita com o cluster no ar: o node group Spot subiu ao lado do antigo, o EKS drenou
 os pods para ele, e o ELB seguiu respondendo 200. O smoke test pelo ELB deu os mesmos
-**11/14** de antes (as 3 falhas são do câmbio, por falta da API key da AwesomeAPI).
+**11/14** de antes (as 3 falhas eram do câmbio, por falta da API key da AwesomeAPI; com a chave
+no Secret, **14/14**).
 
 **Avaliado e não aplicado:**
 

@@ -56,7 +56,7 @@ Executado na conta AWS do grupo (IAM Identity Center/SSO, papel `AdministratorAc
 | Banco | **Amazon RDS** PostgreSQL **17.9**, `db.t4g.micro`, 20 GB gp3, Single-AZ, **sem IP público**; o Flyway criou o schema `accounts` no primeiro start |
 | Imagens | **Amazon ECR** da conta: `account-service`, `auth-service`, `exchange-service`, `gateway-service` (`amd64` + `arm64`, scan on push) |
 | Load Balancer | Classic LB do Service `gateway`: **<http://a0fe1d39fd35640c4b0de61fe105bdb5-64525269.us-east-2.elb.amazonaws.com/info>** (portas 80 e 8080) |
-| Smoke test pelo ELB | **11/14** — todo o fluxo de conta, login, JWT, rotas seguras e cache; as 3 verificações de câmbio falham porque a AwesomeAPI recusa IPs da AWS sem API key (abaixo) |
+| Smoke test pelo ELB | **11/14** — todo o fluxo de conta, login, JWT, rotas seguras e cache; as 3 verificações de câmbio falharam porque a AwesomeAPI recusa IPs da AWS sem API key (abaixo; com a chave, **14/14**) |
 | HPA (busybox do enunciado) | gateway **1 → 4 → 8 → 10 réplicas** em ~80 s — [Teste de carga](load-testing.md#resultado-no-eks) |
 
 Esse foi o **primeiro deploy** (≈ US$ 0,34/h). Depois de validado, o ambiente foi reduzido ao
@@ -71,7 +71,7 @@ mínimo, com o cluster no ar e sem trocar o endereço do ELB:
 | Banco | **Postgres no cluster** (`k8s/postgres.yaml`); o RDS foi apagado (sem snapshot). O Flyway recriou o schema no primeiro start |
 | Load Balancer | 1 Classic LB, o mesmo endereço de antes |
 | ECR | lifecycle policy (sem tag: 1 dia; com tag: as 3 últimas) e imagem órfã apagada (2,55 → 2,05 GB) |
-| Smoke test pelo ELB | **11/14**, igual ao primeiro deploy (só o câmbio falha, por falta da API key) |
+| Smoke test pelo ELB | **14/14** com a API key da AwesomeAPI no Secret `exchange-secrets` (antes dela, 11/14: só o câmbio falhava) |
 | Capacidade para o HPA | `kubectl scale deployment gateway --replicas=10`: **10/10 `Running` em 30 s** nos 2 nós Spot, com o Postgres junto (requests de memória a 80 % e 91 %). O HPA com busybox subiu 1 → 2 → 4 → 6 (o limite foi a carga gerada, não os nós) |
 | Teardown automático | **3 h** (antes 8 h), a menos que exista `~/KEEP_EKS` |
 
@@ -82,7 +82,7 @@ aplicação, mas o HPA do gateway só conseguiria subir mais 2–3 réplicas ant
 `Pending` por memória (cada réplica pede 384 Mi). Com 2 nós o gateway chegou a 10 réplicas com
 os nós a 42 % / 26 % de CPU e ~60 % de memória.
 
-!!! warning "Câmbio na AWS: AwesomeAPI devolve `429 QuotaExceeded` sem API key"
+!!! success "Câmbio na AWS: AwesomeAPI devolve `429 QuotaExceeded` sem API key (resolvido)"
     Do Mac, `GET https://economia.awesomeapi.com.br/json/last/USD-BRL` responde 200; dos dois NAT
     Gateways da VPC, a mesma chamada devolve `429 {"code":"QuotaExceeded"}` desde a primeira
     requisição (os IPs da AWS já chegam com a cota sem chave estourada). O exchange
@@ -90,6 +90,11 @@ os nós a 42 % / 26 % de CPU e ~60 % de memória.
     correção é a API key gratuita (100 mil requisições/mês): o exchange envia o header
     `x-api-key` quando existe `EXCHANGE_PROVIDER_TOKEN`, e o `deploy.sh` cria o Secret
     `exchange-secrets` com ela (`EXCHANGE_PROVIDER_TOKEN=<chave> ./k8s/deploy.sh`), sem passar pelo git.
+
+    Com a chave (guardada num arquivo local, fora do repositório, e lida direto para o Secret com
+    `kubectl create secret generic exchange-secrets --from-file=EXCHANGE_PROVIDER_TOKEN=<arquivo>`)
+    e um `kubectl rollout restart deployment/exchange`, o smoke test pelo ELB passou a **14/14**
+    (15/11, 23:21 UTC).
 
 ??? example "Saídas: `kubectl get nodes/pods/svc/hpa`, `kubectl top`, EKS, RDS e ECR"
 

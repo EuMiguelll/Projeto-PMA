@@ -44,7 +44,7 @@ flowchart LR
 - [x] **Custos, PaaS e SLA** (us-east-2, preços da AWS Price List) — [Custos](projeto/custos.md)
 - [x] Apresentação (slides) e roteiro do vídeo de 1–2 min — [Apresentação](projeto/apresentacao.md)
 - [x] **Execução real no EKS** (15/11/2026): cluster `eks-store` 1.37, RDS PostgreSQL, imagens no ECR, ELB público, HPA do gateway 1 → 10 réplicas; depois reduzido ao mínimo (2 nós **Spot**, 1 NAT, Postgres no cluster, ECR com lifecycle: US$ 0,34 → **0,21/h**) — [AWS e EKS](projeto/eks.md#deploy-real-no-eks-15112026), [Custos](projeto/custos.md#otimizacoes-aplicadas), [Teste de carga](projeto/load-testing.md#resultado-no-eks)
-- [ ] API key da AwesomeAPI no EKS (a API recusa IPs da AWS sem chave; o câmbio funciona no compose)
+- [x] API key da AwesomeAPI no EKS (a API recusa IPs da AWS sem chave): Secret `exchange-secrets`, smoke test pelo ELB **14/14** — [AWS e EKS](projeto/eks.md#deploy-real-no-eks-15112026)
 - [ ] Vídeo do teste de carga com HPA no EKS e vídeo de apresentação (1–2 min)
 
 ## Repositórios
