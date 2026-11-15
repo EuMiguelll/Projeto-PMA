@@ -1,0 +1,93 @@
+# Plataforma completa local: docker compose up -d --build   (antes: ./scripts/build.sh)
+# Só o gateway (8080) é exposto; os demais ficam na rede interna (trusted layer).
+name: store
+
+x-java: &java
+  restart: unless-stopped
+  deploy:
+    resources:
+      limits:
+        memory: 512M
+
+services:
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ${DB_USER:-store}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-store}
+      POSTGRES_DB: ${DB_NAME:-store}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-store}"]
+      interval: 5s
+      retries: 20
+
+  redis: # cache (account, exchange) + rate limiting (gateway)
+    image: redis:7-alpine
+
+  account:
+    <<: *java
+    build: ./api/account-service
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_DB: ${DB_NAME:-store}
+      DATABASE_USERNAME: ${DB_USER:-store}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-store}
+      REDIS_HOST: redis
+    depends_on:
+      db:
+        condition: service_healthy
+
+  auth:
+    <<: *java
+    build: ./api/auth-service
+    environment:
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-EBwrdOOcAIDRLON9hbJV0+O3PTdfTjgMCQIxwLH7ws8=}
+
+  exchange:
+    <<: *java
+    build: ./api/exchange-service
+    environment:
+      REDIS_HOST: redis
+      # demo do circuit breaker: EXCHANGE_PROVIDER_URL=http://redis:6380 docker compose up -d exchange
+      EXCHANGE_PROVIDER_URL: ${EXCHANGE_PROVIDER_URL:-https://economia.awesomeapi.com.br}
+
+  gateway:
+    <<: *java
+    build: ./api/gateway-service
+    ports:
+      - 8080:8080
+    environment:
+      REDIS_HOST: redis
+      RATE_LIMIT_REPLENISH: ${RATE_LIMIT_REPLENISH:-50}
+      RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-100}
+    depends_on:
+      - account
+      - auth
+      - exchange
+      - redis
+
+  # bottleneck: observabilidade
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    ports:
+      - 9090:9090
+    volumes:
+      - ./setup/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    ports:
+      - 3000:3000
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - ./setup/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+
+volumes:
+  db_data:
