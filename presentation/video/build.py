@@ -123,6 +123,7 @@ def blocks_from_audio(audio):
 def build_apresentacao(audio=None):
     if '--blocks' in sys.argv:
         d = json.load(open(sys.argv[sys.argv.index('--blocks') + 1]))
+        d = d['blocks'] if isinstance(d, dict) else d
     else:
         d = blocks_from_audio(audio) if audio else blocks_from_words()
     print('blocos (s):', ' '.join(f'{x:.1f}' for x in d), f'= {sum(d):.1f}s')

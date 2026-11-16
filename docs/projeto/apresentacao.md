@@ -8,7 +8,7 @@
   <source src="../../videos/apresentacao.mp4" type="video/mp4">
 </video>
 
-[Baixar o vídeo de apresentação](../videos/apresentacao.mp4) · 1 min 45 s, narrado por Miguel Damásio
+[Baixar o vídeo de apresentação](../videos/apresentacao.mp4) · 1 min 51 s, narrado por Miguel Damásio
 
 ### Teste de carga com HPA
 
