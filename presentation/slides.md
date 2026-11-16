@@ -70,7 +70,7 @@ brace expansion do bash 3.2 no smoke test
 
 - 1º deploy: US$ 0,34/h (US$ 251/mês) → **otimizado: ≈ US$ 0,21/h (US$ 155/mês, −38 %)**
 - Spot −0,062/h · 1 NAT −0,05/h · sem RDS −0,019/h · ECR com lifecycle · teardown automático 3 h
-- Agora: EKS 73 · NAT 34 · LB 18 · EC2 Spot 15 · IPv4 11 · EBS+ECR 3 · deploy real ≈ **US$ 1,15** (pior caso)
+- Agora: EKS 73 · NAT 34 · LB 18 · EC2 Spot 15 · IPv4 11 · EBS+ECR 3 · deploy real ≈ **US$ 1,24**, destruído em 16/11
 - PaaS: EKS, ELB, RDS, ECR, CloudFormation, GitHub Actions/Pages
 - Disponibilidade composta (produção): **99,43 %** (RDS Single-AZ) → **99,88 %** (Multi-AZ)
 - SLO 99,5 % · SLA 99,0 %

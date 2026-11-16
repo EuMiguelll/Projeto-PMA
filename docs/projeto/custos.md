@@ -83,7 +83,7 @@ Feitas em 15/11/2026, entre 22:40 e 23:00 UTC, com o cluster no ar.
 | **Sem RDS**: Postgres no cluster (`k8s/postgres.yaml`) | `db.t4g.micro` + 20 GB gp3 (0,0192) | 0 | 0,0192 | 13,98 |
 | **ECR com lifecycle**: sem tag expira em 1 dia; ficam só as 3 últimas com tag. Imagem órfã apagada; `push-images.sh` passa a publicar só `amd64` | 2,55 GB | 2,05 GB (≈ 1 GB nos próximos pushes) | — | ≈ 0,05–0,15 |
 | **1 Load Balancer** só (o Service `gateway`; o Ingress/ALB não é aplicado) | 1 | 1 | — | — |
-| Teardown automático de segurança | 8 h | **3 h** | — | pior caso de US$ 3,25 para US$ 1,15 |
+| Teardown automático de segurança | 8 h | **3 h** | — | pior caso planejado de US$ 3,25 para US$ 1,15 (real: ≈ US$ 1,24, ver abaixo) |
 | `eks-create.sh` cria o cluster com `--upgrade-policy supportType=STANDARD` | suporte estendido (US$ 0,60/h quando a versão sai do suporte padrão) | upgrade automático | — | evita +US$ 365/mês |
 | **Total** | **0,342/h** | **0,211/h** | **0,1315 (−38 %)** | **≈ 95,96** |
 
@@ -134,13 +134,20 @@ Linha do tempo (UTC), conferida com a AWS CLI:
 |---------|--------------|------:|------:|------:|
 | 21:29 → 22:47 | A0: 2 NAT, 2 × `t3.medium` on-demand, RDS | 0,342 | 1,3 | ≈ 0,44 |
 | 22:47 → 23:00 | troca: Spot sobe, NAT2 sai às 22:49, nós on-demand saem às 22:55, RDS às 23:00 | ≈ 0,30 | 0,2 | ≈ 0,07 |
-| 23:00 → 01:43 (16/11) | A otimizado, até o teardown automático (pior caso) | 0,211 | 2,7 | ≈ 0,58 |
-| 01:43 → ~02:05 | teardown (recursos sendo apagados) | ≈ 0,15 | 0,4 | ≈ 0,05 |
-| **Total (pior caso)** | | | **≈ 4,6** | **≈ US$ 1,15** |
+| 23:00 → 02:18 (16/11) | A otimizado; o teardown automático agendado para 01:43 não disparou | 0,211 | 3,3 | ≈ 0,70 |
+| 02:18 → 02:30 | teardown pelo AWS CloudShell (LB → node group → cluster → VPC → ECR) | ≈ 0,15 | 0,2 | ≈ 0,03 |
+| **Total** | | | **≈ 5,0** | **≈ US$ 1,24** |
 
-Antes da otimização, o pior caso (tudo ligado até o teardown de 8 h) era **≈ US$ 3,25**. Se o
-cluster for destruído logo depois da gravação, o total fica abaixo de US$ 1. Some centavos de
-NAT por GB (pull das imagens, ≈ 2 GB × 0,045) e as chamadas ao Cost Explorer (US$ 0,01 cada).
+Antes da otimização, o pior caso (tudo ligado até o teardown de 8 h) era **≈ US$ 3,25**.
+
+!!! warning "O teardown automático não disparou"
+    O agendamento de segurança rodava no Mac de um integrante e não executou às 01:43 UTC. Às 01:52
+    conferimos de fora que o Load Balancer ainda respondia `200`, entramos na conta pelo AWS access
+    portal e rodamos os passos do `aws/eks-teardown.sh` no **AWS CloudShell** (02:18–02:30 UTC). Em
+    seguida, uma varredura em **todas as regiões** (EKS, EC2, NAT, Load Balancers, IPs elásticos, RDS)
+    voltou vazia. O atraso custou ≈ US$ 0,12 a mais. Lição: o teardown automático precisa rodar num
+    lugar que não dorme (por exemplo, um *AWS Budget* com ação ou uma regra do EventBridge na própria
+    conta), não num notebook. Evidência: [`docs/evidencias/teardown.txt`](https://github.com/EuMiguelll/Projeto-PMA/blob/main/docs/evidencias/teardown.txt).
 
 **Cost Explorer**: está habilitado na conta e mostrava **US$ 0,00** de 01/11 a 15/11 (consultado
 às 23:05 UTC de 15/11; nenhum recurso existia antes desta sessão). A AWS publica os custos com

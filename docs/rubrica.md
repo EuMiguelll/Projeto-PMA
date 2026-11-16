@@ -36,7 +36,7 @@ foi feito e onde está a evidência.
 ## Custo de AWS
 
 Usamos o mínimo de AWS: só uma conta e uma região, e cada recurso com o teardown já planejado.
-O deploy real ficou ligado ≈ 4,6 h e custou **≈ US$ 1,15 no pior caso**. As otimizações
+O deploy real ficou ligado ≈ 5 h e custou **≈ US$ 1,24** (pelos preços oficiais; o Cost Explorer confirma a partir de 17/11), e foi todo destruído em 16/11 às 02:30 UTC. As otimizações
 derrubaram o custo por hora em 38 % (Spot, 1 NAT, sem RDS, ECR com lifecycle), e o vídeo do HPA
 foi gravado num Kubernetes local (kind) com os mesmos manifests, sem gastar AWS. Detalhes em
 [Custos](projeto/custos.md#custo-real-do-deploy-de-15112026).
