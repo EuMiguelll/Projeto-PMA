@@ -8,15 +8,15 @@ do projeto. Esta página liga cada exercício da disciplina ao que foi entregue.
 | **Exchange API** | ✅ | `exchange` + `exchange-service` — [Exchange](projeto/exchange.md). O exercício pede FastAPI/Python; no projeto foi feito em Java (justificativa na página) |
 | **Bottlenecks** | ✅ | 6 bottlenecks implementados e medidos — [Bottlenecks](projeto/bottlenecks.md) |
 | **MiniKube** | ✅ | `k8s/k8s.yaml` em cada repositório de serviço; implantado num cluster local (kind) com smoke test 14/14 e HPA — [Teste de carga](projeto/load-testing.md#resultado-no-kubernetes-local-kind) |
-| **Jenkins** | ⏳ | o projeto usa **GitHub Actions** (mesmo pipeline: build → teste → imagem → deploy) — [CI/CD](projeto/cicd.md). Se o exercício de Jenkins foi feito à parte, adicionar aqui o `Jenkinsfile` e prints |
-| **Product API** | ⏳ | fora do escopo do projeto (gateway, auth, account, exchange); adicionar se feito |
-| **Order API** | ⏳ | idem |
+| **Jenkins** | ↪︎ GitHub Actions | a rubrica aceita *Jenkins **ou** GitHub Actions*; usamos o GitHub Actions com as mesmas etapas do exercício (SCM → dependências → build → imagem → deploy no K8s) — [CI/CD](projeto/cicd.md) |
+| **Product API** | — | fora do escopo do projeto 2026.2, cuja rubrica pede gateway, auth, account e exchange |
+| **Order API** | — | idem |
 | **Projeto** | ✅ | [Projeto](projeto/index.md) |
 
-!!! note "Para completar"
-    Os exercícios marcados com ⏳ não estão neste repositório. Para cada um feito em aula,
-    acrescente uma seção abaixo seguindo o modelo do template da disciplina (data, objetivo,
-    passos, código, evidências) e o link do repositório.
+!!! note "Escopo"
+    A rubrica do projeto 2026.2 é formada por gateway, auth, account, exchange, bottlenecks, AWS,
+    EKS, CI/CD (Jenkins ou GitHub Actions), teste de carga, custos e documentação. Os exercícios
+    Product e Order pertencem ao roteiro de outras edições da loja e não fazem parte desta entrega.
 
 ## Hands-on usados como referência
 
