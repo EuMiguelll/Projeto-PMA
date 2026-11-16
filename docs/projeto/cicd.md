@@ -59,7 +59,12 @@ e o ID da conta não vai para arquivos nem para os logs públicos (`mask-aws-acc
 
 ## Execuções no GitHub Actions
 
-Os workflows rodam no GitHub a cada push (15/11/2026, 23:01 UTC):
+Os workflows rodam no GitHub a cada push (15/11/2026, 23:01 UTC). O repositório principal tem
+duas cópias idênticas: [`canavero/platform`](https://github.com/canavero/platform/actions), onde o
+E2E e o deploy das docs rodam, e [`EuMiguelll/Projeto-PMA`](https://github.com/EuMiguelll/Projeto-PMA),
+a entrega individual do Miguel, que tem os mesmos arquivos em `.github/workflows/` mas o Actions
+desligado (a conta pessoal está com cobrança bloqueada no GitHub). Ali o site é publicado pela
+branch `gh-pages` (`mkdocs gh-deploy`).
 
 | Repositório | Workflow | Build & Test | Imagem + Trivy | Deploy EKS |
 |-------------|----------|:------------:|:--------------:|:----------:|
