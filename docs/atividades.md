@@ -9,14 +9,15 @@ do projeto. Esta página liga cada exercício da disciplina ao que foi entregue.
 | **Bottlenecks** | ✅ | 6 bottlenecks implementados e medidos — [Bottlenecks](projeto/bottlenecks.md) |
 | **MiniKube** | ✅ | `k8s/k8s.yaml` em cada repositório de serviço; implantado num cluster local (kind) com smoke test 14/14 e HPA — [Teste de carga](projeto/load-testing.md#resultado-no-kubernetes-local-kind) |
 | **Jenkins** | ↪︎ GitHub Actions | a rubrica aceita *Jenkins **ou** GitHub Actions*; usamos o GitHub Actions com as mesmas etapas do exercício (SCM → dependências → build → imagem → deploy no K8s) — [CI/CD](projeto/cicd.md) |
-| **Product API** | — | fora do escopo do projeto 2026.2, cuja rubrica pede gateway, auth, account e exchange |
+| **Product API** | — | não feito: fora da rubrica do projeto 2026.2, que pede gateway, auth, account e exchange |
 | **Order API** | — | idem |
 | **Projeto** | ✅ | [Projeto](projeto/index.md) |
 
 !!! note "Escopo"
     A rubrica do projeto 2026.2 é formada por gateway, auth, account, exchange, bottlenecks, AWS,
     EKS, CI/CD (Jenkins ou GitHub Actions), teste de carga, custos e documentação. Os exercícios
-    Product e Order pertencem ao roteiro de outras edições da loja e não fazem parte desta entrega.
+    Product e Order estão na lista de exercícios da disciplina, mas não entram na rubrica do projeto
+    e não foram feitos por nós.
 
 ## Hands-on usados como referência
 
