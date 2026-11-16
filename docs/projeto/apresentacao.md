@@ -4,9 +4,11 @@
 
 ### Apresentação (1–2 min)
 
-!!! info "Em edição"
-    O vídeo já está montado com as gravações reais e o roteiro abaixo; falta só a narração.
-    Assim que o áudio for gravado, o vídeo final entra aqui.
+<video controls preload="metadata" width="100%" poster="../../assets/slides/s1-title.png">
+  <source src="../../videos/apresentacao.mp4" type="video/mp4">
+</video>
+
+[Baixar o vídeo de apresentação](../videos/apresentacao.mp4) · 1 min 45 s, narrado por Miguel Damásio
 
 ### Teste de carga com HPA
 
@@ -20,7 +22,8 @@
 ## Roteiro do vídeo de apresentação
 
 Cobre os tópicos pedidos na página *Presentation*: introdução, arquitetura, demonstração,
-desafios/bottlenecks e conclusão com próximos passos.
+desafios/bottlenecks e conclusão com próximos passos. A narração segue este roteiro, com pequenas
+variações de fala.
 
 | Bloco | Tela | Fala |
 |------:|------|------|

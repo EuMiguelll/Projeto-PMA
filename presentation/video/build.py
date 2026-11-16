@@ -121,7 +121,10 @@ def blocks_from_audio(audio):
 
 
 def build_apresentacao(audio=None):
-    d = blocks_from_audio(audio) if audio else blocks_from_words()
+    if '--blocks' in sys.argv:
+        d = json.load(open(sys.argv[sys.argv.index('--blocks') + 1]))
+    else:
+        d = blocks_from_audio(audio) if audio else blocks_from_words()
     print('blocos (s):', ' '.join(f'{x:.1f}' for x in d), f'= {sum(d):.1f}s')
     elb, bn, hpa, tail = C('elb-smoke.mp4'), C('bottlenecks.mp4'), C('hpa-raw.mp4'), C('hpa-tail.mp4')
     graf = glob.glob(C('grafana-raw', '*.webm'))[0]

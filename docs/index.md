@@ -48,7 +48,7 @@ flowchart LR
 - [x] API key da AwesomeAPI no EKS (a API recusa IPs da AWS sem chave): Secret `exchange-secrets`, smoke test pelo ELB **14/14** — [AWS e EKS](projeto/eks.md#deploy-real-no-eks-15112026)
 - [x] **E2E no CI** hermético (stub da AwesomeAPI), smoke test 14/14 a cada push — [CI/CD](projeto/cicd.md#e2e-hermetico)
 - [x] **Vídeo do teste de carga com HPA** (gateway 1 → 10 réplicas e volta a 1) — [Teste de carga](projeto/load-testing.md#video-do-teste-de-carga)
-- [x] Apresentação (slides) e vídeo de 1–2 min (roteiro e montagem prontos; narração em gravação) — [Apresentação](projeto/apresentacao.md)
+- [x] **Apresentação** (slides) e **vídeo de 1 min 45 s** narrado — [Apresentação](projeto/apresentacao.md)
 
 ## Repositórios
 
