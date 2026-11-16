@@ -3,14 +3,14 @@ marp: true
 theme: default
 paginate: true
 title: Projeto Store — Plataformas 2026.2
-author: Enzo Canavero
+author: Enzo Canavero e Miguel Damasio
 ---
 
 # Projeto Store
 
 ### Microsserviços Spring Boot no Amazon EKS
 
-Enzo Canavero · Plataformas · Insper 2026.2 · individual
+Enzo Canavero e Miguel Damasio · Plataformas · Insper 2026.2
 
 Objetivo: API de contas e câmbio com autenticação, resiliência e **escala automática** na nuvem.
 
@@ -83,4 +83,4 @@ brace expansion do bash 3.2 no smoke test
 - Próximos passos: RDS Multi-AZ, ECR, Ingress ALB + TLS, KEDA (escala por req/s),
   nós Spot/Graviton, Redis gerenciado (ElastiCache)
 
-**Obrigado!** · docs: `https://canavero.github.io/platform/`
+**Obrigado!** · docs: `https://eumiguelll.github.io/Projeto-PMA/`

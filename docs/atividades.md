@@ -9,7 +9,7 @@ do projeto. Esta página liga cada exercício da disciplina ao que foi entregue.
 | **Bottlenecks** | ✅ | 6 bottlenecks implementados e medidos — [Bottlenecks](projeto/bottlenecks.md) |
 | **MiniKube** | ✅ | `k8s/k8s.yaml` em cada repositório de serviço; implantado num cluster local (kind) com smoke test 14/14 e HPA — [Teste de carga](projeto/load-testing.md#resultado-no-kubernetes-local-kind) |
 | **Jenkins** | ⏳ | o projeto usa **GitHub Actions** (mesmo pipeline: build → teste → imagem → deploy) — [CI/CD](projeto/cicd.md). Se o exercício de Jenkins foi feito à parte, adicionar aqui o `Jenkinsfile` e prints |
-| **Product API** | ⏳ | fora do escopo individual do projeto (gateway, auth, account, exchange); adicionar se feito |
+| **Product API** | ⏳ | fora do escopo do projeto (gateway, auth, account, exchange); adicionar se feito |
 | **Order API** | ⏳ | idem |
 | **Projeto** | ✅ | [Projeto](projeto/index.md) |
 

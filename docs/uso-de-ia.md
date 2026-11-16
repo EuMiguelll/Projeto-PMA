@@ -33,9 +33,9 @@ A IA errou e só percebeu porque tudo foi executado, não apenas escrito:
 - no EKS, a AwesomeAPI devolveu `429 QuotaExceeded` para os IPs dos NAT Gateways (do Mac, 200):
   só o deploy real mostrou que o exchange precisa de API key na nuvem.
 
-## Responsabilidade do aluno
+## Responsabilidade do grupo
 
-Usar IA não tira a responsabilidade de entender e defender o projeto. Antes da entrega, o Enzo
+Usar IA não tira a responsabilidade de entender e defender o projeto. Antes da entrega, o grupo
 deve:
 
 - [ ] ler o código de cada serviço e saber explicar o fluxo JWT (login → cookie → `/auth/solve` → `id-account`);

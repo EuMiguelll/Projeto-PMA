@@ -1,9 +1,9 @@
 site_name: Plataformas 2026.2 — Projeto Store
 site_description: Projeto final de Plataformas (Insper) — microsserviços Spring Boot no EKS
-site_author: Enzo Canavero
-site_url: https://canavero.github.io/platform/
-repo_url: https://github.com/canavero/platform
-repo_name: canavero/platform
+site_author: Enzo Canavero e Miguel Damasio
+site_url: https://eumiguelll.github.io/Projeto-PMA/
+repo_url: https://github.com/EuMiguelll/Projeto-PMA
+repo_name: EuMiguelll/Projeto-PMA
 edit_uri: ""
 
 theme:

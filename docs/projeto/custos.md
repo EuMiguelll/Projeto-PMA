@@ -201,7 +201,7 @@ Para o cenário C, acrescente o RDS for PostgreSQL (`db.t4g.small`, Multi-AZ, 50
 | Segurança | *scan on push* (vulnerabilidades) grátis | — |
 | Integração | nativa com EKS, IAM e OIDC do GitHub Actions | qualquer cluster/CI |
 
-No deploy real usei o **ECR** da conta do grupo: não havia Docker Hub configurado, o pull não
+No deploy real usamos o **ECR** da conta do grupo: não havia Docker Hub configurado, o pull não
 tem limite, as imagens ficam privadas e os nós autenticam pela role do node group, sem segredo
 no cluster. O custo é de centavos. O Docker Hub (padrão do hands-on 4) continua funcionando com
 `DOCKERHUB_USERNAME=<usuario>` nos scripts e no CI.

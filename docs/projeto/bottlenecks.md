@@ -1,6 +1,6 @@
 # Bottlenecks
 
-A página *Bottlenecks* da disciplina lista gargalos típicos e suas mitigações. Implementei **seis**,
+A página *Bottlenecks* da disciplina lista gargalos típicos e suas mitigações. Implementamos **seis**,
 pelo menos um em cada serviço, todos validados ao vivo no `docker compose` (as saídas abaixo
 são das execuções reais):
 
@@ -13,7 +13,7 @@ são das execuções reais):
 | 5 | **Vulnerability scanning** | CI de todos os serviços | Trivy na imagem publicada | relatório HIGH/CRITICAL em cada build |
 | 6 | **Load balancing / escala horizontal** | Kubernetes | Service + HPA (CPU 50 %) + ELB | [Teste de carga](load-testing.md) |
 
-Destaques do aluno (mínimo de 2 exigido): **1. Cache Redis** e **2. Circuit breaker + retry**,
+Destaques do grupo (mínimo de 2 exigido): **1. Cache Redis** e **2. Circuit breaker + retry**,
 com **3. Rate limiting** como terceiro.
 
 ---

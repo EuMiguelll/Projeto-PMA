@@ -6,7 +6,7 @@ Tudo roda na máquina com Docker — inclusive o build, se não houver Java inst
 serviços, com `package`, que roda os testes).
 
 ```bash
-git clone --recurse-submodules https://github.com/canavero/platform.git && cd platform
+git clone --recurse-submodules https://github.com/EuMiguelll/Projeto-PMA.git && cd Projeto-PMA
 ./scripts/build.sh                 # 7 módulos: compila, testa e gera api/*-service/target/*.jar
 docker compose up -d --build       # db, redis, account, auth, exchange, gateway, prometheus, grafana
 ./scripts/smoke-test.sh            # teste ponta a ponta pelo gateway

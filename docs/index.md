@@ -2,8 +2,8 @@
 
 <div class="grid cards" markdown>
 
-- :material-account: **Aluno:** Enzo Canavero
-- :material-account-group: **Grupo:** individual (implementou os 4 microsserviços: Gateway, Auth, Account e Exchange)
+- :material-account: **Alunos:** Enzo Urioste Canavero e Miguel Fernandes Oliveira Damasio
+- :material-account-group: **Grupo:** dupla (implementou os 4 microsserviços: Gateway, Auth, Account e Exchange)
 - :material-school: **Disciplina:** Plataformas — Insper, 2026.2
 - :material-robot: **IA:** feito com Claude Code — ver [Uso de IA](uso-de-ia.md)
 
@@ -53,7 +53,7 @@ O repositório principal agrega os serviços como **submódulos Git** em `api/`,
 
 | Repositório | Papel | Caminho |
 |-------------|-------|---------|
-| [`platform`](https://github.com/canavero/platform) | principal: docs, compose, k8s, scripts AWS, teste de carga | `/` |
+| [`Projeto-PMA`](https://github.com/EuMiguelll/Projeto-PMA) | principal: docs, compose, k8s, scripts AWS, teste de carga | `/` |
 | [`gateway-service`](https://github.com/canavero/gateway-service) | API Gateway (Spring Cloud Gateway, WebFlux) | `api/gateway-service` |
 | [`auth`](https://github.com/canavero/auth) | interface do Auth (Feign + DTOs) | `api/auth` |
 | [`auth-service`](https://github.com/canavero/auth-service) | login, emissão e validação de JWT | `api/auth-service` |
@@ -63,8 +63,8 @@ O repositório principal agrega os serviços como **submódulos Git** em `api/`,
 | [`exchange-service`](https://github.com/canavero/exchange-service) | cotações de câmbio | `api/exchange-service` |
 
 ```bash
-git clone --recurse-submodules https://github.com/canavero/platform.git
-cd platform && ./scripts/build.sh && docker compose up -d --build && ./scripts/smoke-test.sh
+git clone --recurse-submodules https://github.com/EuMiguelll/Projeto-PMA.git
+cd Projeto-PMA && ./scripts/build.sh && docker compose up -d --build && ./scripts/smoke-test.sh
 ```
 
 ## Vídeos

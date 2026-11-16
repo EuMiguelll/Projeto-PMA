@@ -1,6 +1,6 @@
 # CI/CD — GitHub Actions
 
-O enunciado aceita Jenkins **ou** GitHub Actions; usei **GitHub Actions** (zero infraestrutura,
+O enunciado aceita Jenkins **ou** GitHub Actions; usamos **GitHub Actions** (zero infraestrutura,
 gratuito para repositórios públicos), seguindo o apêndice *GitHub Actions* da disciplina e as
 etapas pedidas no exercício Jenkins: **SCM → Dependencies → Build → Push da imagem → Deploy to K8s**.
 O registry é o **Amazon ECR** da conta do grupo (o mesmo usado no deploy real) ou o Docker Hub.
