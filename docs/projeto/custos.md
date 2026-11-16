@@ -189,7 +189,23 @@ Para reproduzir (e gerar o link compartilhável) em <https://calculator.aws/#/>,
 
 O total deve ficar perto da tabela A (≈ US$ 155/mês; o Spot da calculadora varia um pouco).
 Para o cenário C, acrescente o RDS for PostgreSQL (`db.t4g.small`, Multi-AZ, 50 GB gp3).
-**Link da estimativa:** _a gerar no calculator e colar aqui_.
+
+**Link da estimativa (cenário A, us-east-2):**
+<https://calculator.aws/#/estimate?id=9a7c8ac46c02728fc7e7ae43ea1fff1426cc25f2>
+(gerada em 16/11/2026; o link público vale por 1 ano)
+
+| Serviço na calculadora | Configuração | US$/mês |
+|------------------------|--------------|--------:|
+| Amazon EKS | 1 cluster, suporte padrão | 73,00 |
+| Amazon EC2 | 2 × `t3.medium` Linux, **Spot** (desconto histórico de 69 % que a calculadora sugere) + EBS 20 GB cada | 22,03 |
+| Amazon VPC | 1 NAT Gateway (1 AZ, 20 GB) + 3 IPv4 públicos | 44,70 |
+| Elastic Load Balancing | 1 Classic Load Balancer (≈ 20 GB/mês) | 18,43 |
+| Amazon ECR | 2 GB armazenados | 0,20 |
+| **Total** | | **158,36** |
+
+A diferença para a tabela A (US$ 154,77) é o Spot: a calculadora usa o desconto médio histórico
+(69 %), e nós medimos 75 % no dia do deploy. A versão atual da calculadora modela o NAT como
+*Regional NAT Gateway*; com 1 AZ ativa, o preço é o mesmo do NAT zonal (US$ 0,045/h + US$ 0,045/GB).
 
 ## 3. ECR × Docker Hub
 

@@ -56,6 +56,14 @@ services:
       EXCHANGE_PROVIDER_URL: ${EXCHANGE_PROVIDER_URL:-https://economia.awesomeapi.com.br}
       EXCHANGE_PROVIDER_TOKEN: ${EXCHANGE_PROVIDER_TOKEN:-} # API key da AwesomeAPI (opcional)
 
+  # E2E no CI: substitui a AwesomeAPI (sem API key, IPs de nuvem recebem 429)
+  #   EXCHANGE_PROVIDER_URL=http://provider-stub docker compose --profile e2e up -d
+  provider-stub:
+    image: nginx:1.29-alpine
+    profiles: [e2e]
+    volumes:
+      - ./setup/provider-stub/default.conf:/etc/nginx/conf.d/default.conf:ro
+
   gateway:
     <<: *java
     build: ./api/gateway-service

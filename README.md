@@ -1,6 +1,6 @@
 # Projeto Store — Plataformas 2026.2
 
-Enzo Canavero e Miguel Damasio (dupla). Microsserviços Spring Boot (gateway, auth, account, exchange) com
+Enzo Canavero e Miguel Damásio (dupla). Microsserviços Spring Boot (gateway, auth, account, exchange) com
 Docker, Kubernetes/EKS, GitHub Actions, bottlenecks, teste de carga e análise de custos.
 
 **Documentação:** https://eumiguelll.github.io/Projeto-PMA/ (fonte em `docs/`).

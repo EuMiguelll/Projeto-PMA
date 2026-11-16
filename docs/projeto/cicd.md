@@ -57,11 +57,41 @@ tem `AmazonEC2ContainerRegistryPowerUser` + `eks:DescribeCluster` no IAM e a acc
 atualizar Deployments, sem poder administrar o cluster. Nenhuma chave de longa duração existe,
 e o ID da conta não vai para arquivos nem para os logs públicos (`mask-aws-account-id: true`).
 
-!!! note "Status"
-    O CI e o deploy no EKS foram validados à mão com os mesmos comandos (`push-images.sh` → ECR,
-    `deploy.sh`, `kubectl set image`). Os workflows ainda não rodaram no GitHub porque o token da
-    conta não tem o escopo `workflow` (ver REPORT); a role OIDC não foi criada para não deixar
-    o ARN da conta do grupo no GitHub sem o aval do grupo.
+## Execuções no GitHub Actions
+
+Os workflows rodam no GitHub a cada push (15/11/2026, 23:01 UTC):
+
+| Repositório | Workflow | Build & Test | Imagem + Trivy | Deploy EKS |
+|-------------|----------|:------------:|:--------------:|:----------:|
+| [`gateway-service`](https://github.com/canavero/gateway-service/actions) | CI/CD | ✅ | ⏭️ | ⏭️ |
+| [`auth-service`](https://github.com/canavero/auth-service/actions) | CI/CD | ✅ | ⏭️ | ⏭️ |
+| [`account-service`](https://github.com/canavero/account-service/actions) | CI/CD | ✅ | ⏭️ | ⏭️ |
+| [`exchange-service`](https://github.com/canavero/exchange-service/actions) | CI/CD | ✅ | ⏭️ | ⏭️ |
+| [`auth`](https://github.com/canavero/auth/actions), [`account`](https://github.com/canavero/account/actions), [`exchange`](https://github.com/canavero/exchange/actions) | CI (interfaces) | ✅ | — | — |
+| [`platform`](https://github.com/canavero/platform/actions) | E2E e docs | ✅ | — | — |
+
+⏭️ = *skipped* de propósito: os jobs de imagem e deploy só ligam com as variáveis `AWS_ECR`/`EKS_CLUSTER`
+e a role OIDC. Para o deploy real, os mesmos passos rodaram à mão, com os mesmos comandos
+(`push-images.sh` → ECR, `deploy.sh`, `kubectl set image`), como mostram as
+[evidências](eks.md#deploy-real-no-eks-15112026). A role OIDC não foi criada: deixaria o ARN da
+conta do grupo no GitHub e um cluster ligado esperando deploys, o que contraria a meta de usar o
+mínimo de AWS.
+
+### E2E hermético
+
+O E2E sobe a plataforma inteira com `docker compose` e roda o smoke test pelo gateway (14
+verificações). Os runners do GitHub recebem `429` da AwesomeAPI quando chamam sem API key, e o
+teste ficava vermelho por um motivo externo ao código. Por isso, no CI o `exchange` fala com um
+**stub** da AwesomeAPI (nginx com respostas fixas, `setup/provider-stub/default.conf`), que
+devolve a cotação de `USD-BRL` e `404` para pares inexistentes, como a API real. O teste fica
+determinístico e não depende de quota de terceiros. O provedor real foi validado no EKS (smoke
+test 14/14 pelo ELB, com a API key no Secret `exchange-secrets`).
+
+```bash
+EXCHANGE_PROVIDER_URL=http://provider-stub docker compose --profile e2e up -d --build \
+  db redis provider-stub account auth exchange gateway
+./scripts/smoke-test.sh   # 14/14
+```
 
 ## Boas práticas aplicadas
 

@@ -2,38 +2,57 @@
 
 ## Vídeos
 
-| Vídeo | Conteúdo | Link |
-|-------|----------|------|
-| Apresentação (1–2 min) | roteiro abaixo | _a gravar_ |
-| Teste de carga + HPA | roteiro em [Teste de carga](load-testing.md) | _a gravar_ |
+### Apresentação (1–2 min)
 
-## Roteiro do vídeo (≈ 1 min 45 s)
+!!! info "Em edição"
+    O vídeo já está montado com as gravações reais e o roteiro abaixo; falta só a narração.
+    Assim que o áudio for gravado, o vídeo final entra aqui.
 
-| Tempo | Tela | Fala (sugestão) |
-|------:|------|-----------------|
-| 0:00–0:10 | slide 1 (título) | "Somos Enzo Canavero e Miguel Damasio, e este é o projeto final de Plataformas: a API Store, quatro microsserviços Spring Boot implantados no Amazon EKS." |
-| 0:10–0:30 | slide 2 (arquitetura) | "O cliente só fala com o **gateway**, que valida o JWT chamando o **auth** e repassa o `id-account`. O **account** guarda usuários no Postgres e o **exchange** busca cotações na AwesomeAPI. Redis serve de cache e de rate limiter." |
-| 0:30–0:55 | terminal | rodar `./scripts/smoke-test.sh http://<elb>` → "registro, login com cookie JWT, conta e câmbio pelo gateway; um header `id-account` forjado é descartado." |
-| 0:55–1:15 | Grafana *Store — Bottlenecks* | "Implementamos seis bottlenecks, pelo menos um por serviço: rate limiting no gateway, circuit breaker no auth, cache Redis no account, cache + retry + circuit breaker no exchange, além de observabilidade e scan de vulnerabilidades no CI. Aqui o 429 do rate limit e o hit/miss do cache." |
-| 1:15–1:30 | `kubectl get hpa,pods` com o busybox rodando | "Com carga, o HPA escala o gateway de 1 para várias réplicas." |
-| 1:30–1:45 | slides 6–7 (custos e conclusão) | "O ambiente custa cerca de 34 centavos de dólar por hora; o pipeline do GitHub Actions testa, publica no ECR e faz o deploy no EKS. Obrigado!" |
+### Teste de carga com HPA
 
-Antes de gravar: `aws/eks-create.sh` + `k8s/deploy.sh` (Runbook passos 3–6), um registro/login
-prévio para o cache ter dados, Grafana aberto (`kubectl port-forward` ou o compose local) e
-**destruir o cluster logo depois** (`aws/eks-teardown.sh`).
+<video controls preload="metadata" width="100%">
+  <source src="../../videos/teste-de-carga-hpa.mp4" type="video/mp4">
+</video>
+
+[Baixar o vídeo do teste de carga](../videos/teste-de-carga-hpa.mp4) · detalhes em
+[Teste de carga](load-testing.md#video-do-teste-de-carga)
+
+## Roteiro do vídeo de apresentação
+
+Cobre os tópicos pedidos na página *Presentation*: introdução, arquitetura, demonstração,
+desafios/bottlenecks e conclusão com próximos passos.
+
+| Bloco | Tela | Fala |
+|------:|------|------|
+| 1 | slide de título | "Oi! Eu sou o Miguel Damásio e, com o Enzo Canavero, fizemos o Projeto Store: quatro microsserviços Spring Boot rodando no Amazon EKS." |
+| 2 | slide de arquitetura | "O cliente só fala com o gateway, que valida o JWT com o auth. O account guarda os usuários no Postgres, o exchange busca cotações numa API externa e o Redis faz cache e rate limiting." |
+| 3 | terminal: smoke test pelo ELB do EKS | "Aqui, a aplicação no ar na AWS, pelo Load Balancer: o smoke test cria um usuário, faz login, lê a conta, que na segunda vez vem do cache, e pega a cotação do dólar. Catorze de catorze." |
+| 4 | terminal: rate limiting, Redis, circuit breaker; Grafana | "Implementamos seis bottlenecks. Rate limiting no gateway: de trezentas requisições em rajada, metade volta com 429. Cache no Redis. E circuit breaker: com o account fora do ar, o auth responde 503 em milissegundos, sem travar. Tudo isso aparece no Grafana." |
+| 5 | 3 painéis: HPA, pods, busybox (acelerado) | "No teste de carga, o busybox do enunciado gera tráfego e o HPA escala o gateway de uma para dez réplicas em cerca de um minuto; sem carga, ele volta para uma." |
+| 6 | slides de desafios/CI e de custos | "Um desafio: na AWS, a API de câmbio bloqueava os IPs da nuvem; resolvemos com uma API key num Secret. O GitHub Actions testa tudo a cada push. E, como custo conta, usamos o mínimo de AWS: nós Spot, um NAT só e Postgres no cluster, de 34 para 21 centavos de dólar por hora, e destruímos o cluster logo depois." |
+| 7 | slide de próximos passos | "Próximos passos: banco gerenciado Multi-AZ, Ingress com TLS e escala por requisições. Obrigado!" |
+
+As imagens são gravações reais: o smoke test rodou contra o Load Balancer do EKS em 15/11/2026,
+os bottlenecks e o Grafana no `docker compose` local, e o teste de carga num cluster Kubernetes
+local (kind) com os mesmos manifests e o mesmo `deploy.sh` do EKS, para não gastar AWS só para
+gravar. Os terminais foram gravados com o [VHS](https://github.com/charmbracelet/vhs) e o Grafana
+com o Playwright; a montagem foi feita com o `ffmpeg`.
 
 ## Slides
 
-Os slides estão em [`presentation/slides.md`](https://github.com/EuMiguelll/Projeto-PMA/blob/main/presentation/slides.md)
-(formato [Marp](https://marp.app/): `npx @marp-team/marp-cli presentation/slides.md --pdf`, ou a
-extensão *Marp for VS Code*).
+<div class="grid" markdown>
 
-| # | Slide | Conteúdo |
-|--:|-------|----------|
-| 1 | Introdução | título, nome, disciplina, objetivo (microsserviços em nuvem com escala automática) |
-| 2 | Arquitetura | diagrama gateway → auth/account/exchange, Postgres, Redis, AwesomeAPI; padrão interface + serviço |
-| 3 | Plataforma | EKS (VPC 2 AZs, node group, RDS, ELB), CI/CD (Actions → ECR → EKS), observabilidade |
-| 4 | Demonstração | smoke test, Grafana, HPA escalando (vídeo) |
-| 5 | Desafios e bottlenecks | 6 bottlenecks com números medidos; problemas encontrados (`REDIS_PORT`, JVM × HPA, bash 3.2) |
-| 6 | Custos e SLA | US$ 0,32/h (≈ US$ 237/mês), PaaS usados, disponibilidade composta 99,43 % → 99,88 % |
-| 7 | Conclusão e próximos passos | RDS Multi-AZ, ECR, Ingress ALB + TLS, KEDA, Spot/Graviton |
+![Capa](../assets/slides/s1-title.png)
+![Arquitetura](../assets/slides/s2-arch.png)
+![Bottlenecks](../assets/slides/s-bn.png)
+![Desafios](../assets/slides/s3-challenges.png)
+![CI/CD](../assets/slides/s-cicd.png)
+![Custos](../assets/slides/s4-costs.png)
+![Próximos passos](../assets/slides/s5-end.png)
+
+</div>
+
+PDF: [`presentation/slides.pdf`](https://github.com/EuMiguelll/Projeto-PMA/blob/main/presentation/slides.pdf) ·
+fonte HTML: [`presentation/slides.html`](https://github.com/EuMiguelll/Projeto-PMA/blob/main/presentation/slides.html) ·
+versão em [Marp](https://marp.app/): [`presentation/slides.md`](https://github.com/EuMiguelll/Projeto-PMA/blob/main/presentation/slides.md) ·
+scripts de gravação e montagem dos vídeos: [`presentation/video/`](https://github.com/EuMiguelll/Projeto-PMA/tree/main/presentation/video).

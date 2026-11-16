@@ -13,8 +13,22 @@ são das execuções reais):
 | 5 | **Vulnerability scanning** | CI de todos os serviços | Trivy na imagem publicada | relatório HIGH/CRITICAL em cada build |
 | 6 | **Load balancing / escala horizontal** | Kubernetes | Service + HPA (CPU 50 %) + ELB | [Teste de carga](load-testing.md) |
 
-Destaques do grupo (mínimo de 2 exigido): **1. Cache Redis** e **2. Circuit breaker + retry**,
-com **3. Rate limiting** como terceiro.
+### Destaques por integrante
+
+A entrega pede **pelo menos 2 bottlenecks em destaque por integrante**. A dupla tem 6; cada um
+apresenta e defende os seus:
+
+| Integrante | Bottlenecks em destaque | Onde ver |
+|------------|-------------------------|----------|
+| **Miguel Damásio** | **3. Rate limiting** no gateway (token bucket no Redis → `429`) e **4. Observabilidade** (Prometheus + Grafana, dashboard *Store — Bottlenecks*) | [§ 3](#3-rate-limiting-gateway), [§ 4](#4-observabilidade-prometheus-grafana) |
+| **Enzo Canavero** | **1. Cache Redis** (account e exchange) e **2. Circuit breaker + retry** (auth → account, exchange → AwesomeAPI) | [§ 1](#1-cache-redis-account-e-exchange), [§ 2](#2-circuit-breaker-e-retry-auth-e-exchange) |
+| Dupla | **5. Vulnerability scanning** (Trivy no CI) e **6. Escala horizontal** (HPA + Service + ELB) | [§ 5](#5-vulnerability-scanning-trivy-no-ci), [§ 6](#6-escala-horizontal-e-balanceamento-hpa-service-elb) |
+
+![Dashboard Store — Bottlenecks no Grafana](../evidencias/grafana-bottlenecks.png)
+
+*Dashboard provisionado (`setup/grafana`), com o compose local sob carga em 16/11/2026: req/s e
+latência por serviço, `429` do rate limiting, o circuito `auth → account` abrindo (account
+parado) e hits/misses do cache Redis.*
 
 ---
 

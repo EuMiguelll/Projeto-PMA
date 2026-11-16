@@ -4,6 +4,7 @@ name: E2E
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -12,6 +13,7 @@ permissions:
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
@@ -24,11 +26,16 @@ jobs:
       - name: Build & test (7 módulos, mvnw)
         run: ./scripts/build.sh
       - name: docker compose up
-        env: # IPs de nuvem recebem 429 da AwesomeAPI sem API key
-          EXCHANGE_PROVIDER_TOKEN: ${{ secrets.EXCHANGE_PROVIDER_TOKEN }}
-        run: docker compose up -d --build db redis account auth exchange gateway
+        env:
+          # A AwesomeAPI devolve 429 para IPs de nuvem sem API key: no CI o exchange fala com um
+          # stub (setup/provider-stub), e o teste não depende de quota de terceiros.
+          EXCHANGE_PROVIDER_URL: http://provider-stub
+        run: docker compose --profile e2e up -d --build db redis provider-stub account auth exchange gateway
       - name: Smoke test
         run: ./scripts/smoke-test.sh
       - name: Logs
         if: failure()
-        run: docker compose logs
+        run: docker compose --profile e2e logs
+      - name: Teardown
+        if: always()
+        run: docker compose --profile e2e down -v

@@ -2,6 +2,31 @@
 
 --8<-- "load-test/README.md:3:"
 
+## Vídeo do teste de carga
+
+<video controls preload="metadata" width="100%">
+  <source src="../../videos/teste-de-carga-hpa.mp4" type="video/mp4">
+</video>
+
+[Baixar o vídeo](../videos/teste-de-carga-hpa.mp4) · 1 min 27 s, com os trechos de espera acelerados (a
+velocidade aparece no canto superior direito).
+
+Três painéis, como na página *Load Testing* da disciplina: `watch kubectl get hpa gateway`,
+`watch kubectl get pods -l app=gateway` e o busybox do enunciado (`WORKERS=16 ./load-test/busybox.sh`).
+Gravado em 16/11/2026 num cluster **kind** local, com os mesmos manifests e o mesmo `k8s/deploy.sh` do
+EKS: o EKS já tinha mostrado o HPA de 1 para 10 em 15/11 (evidência abaixo), e gravar de novo na
+nuvem só gastaria AWS.
+
+| Hora (UTC) | HPA do gateway | O que aconteceu |
+|-----------:|----------------|-----------------|
+| 00:54:28 | 1 réplica, `cpu: 1%/50%` | o busybox começa (16 loops de `wget http://gateway/info`) |
+| 00:55:11 | **4** (`cpu: 151%/50%`) | primeira escala, ≈ 45 s depois |
+| 00:55:31 | **6** | |
+| 00:55:41 | **10** (máximo) | ≈ 75 s após o início da carga |
+| 00:56:57 | 10 | `Ctrl+C`: fim da carga |
+| 01:02:13 → 01:02:43 | 10 → 9 → 3 → **2** | scale-down depois da janela de estabilização de 5 min |
+| 01:07 | **1** | de volta ao mínimo |
+
 ## Resultado no EKS
 
 Cluster `eks-store` (2 × `t3.medium`, us-east-2), 15/11/2026. Dois testes: o do enunciado

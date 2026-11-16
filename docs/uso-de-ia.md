@@ -13,9 +13,10 @@ entrega e as regras de trabalho.
 | Código dos 7 módulos | escreveu interfaces, serviços, testes, `Dockerfile` e manifests | `./mvnw` com testes em cada módulo; imagens construídas |
 | Integração | `compose.yaml`, smoke test, Prometheus/Grafana | smoke test 14/14 no compose e no kind; bottlenecks forçados ao vivo (Redis, circuitos, 429) |
 | Kubernetes / AWS | manifests, `deploy.sh`, scripts de EKS/RDS/teardown, Runbook | `kubeconform`, `shellcheck`, deploy em kind e **deploy real no EKS** (conta do grupo, 15/11/2026): smoke test pelo ELB e HPA 1 → 10 |
-| CI/CD | workflows do GitHub Actions | `actionlint`; ainda não rodaram no GitHub |
+| CI/CD | workflows do GitHub Actions; stub da AwesomeAPI para o E2E | `actionlint`; execuções verdes no GitHub Actions e E2E reproduzido localmente (14/14) |
 | Custos | consultou a AWS Price List e montou os cenários | valores conferidos nos arquivos oficiais de preço |
-| Documentação | este site, roteiro do vídeo e slides | `mkdocs build --strict` |
+| Documentação | este site, roteiro do vídeo, checklist da rubrica e slides | `mkdocs build --strict` |
+| Vídeos e slides | gravou os terminais (VHS) e o Grafana (Playwright), desenhou os slides e montou os vídeos (`ffmpeg`) no tempo do roteiro | gravações reais: smoke test contra o ELB do EKS, bottlenecks e Grafana no compose, HPA num cluster kind |
 
 Regras dadas ao agente e seguidas: não criar recursos pagos na AWS, não publicar no GitHub sem
 confirmar a conta, e poupar o computador (builds um de cada vez, checando carga e memória

@@ -2,8 +2,9 @@
 
 <div class="grid cards" markdown>
 
-- :material-account: **Alunos:** Enzo Urioste Canavero e Miguel Fernandes Oliveira Damasio
-- :material-account-group: **Grupo:** dupla (implementou os 4 microsserviços: Gateway, Auth, Account e Exchange)
+- :material-account: **Alunos:** Enzo Urioste Canavero e Miguel Fernandes Oliveira Damásio
+- :material-account-group: **Grupo:** dupla Miguel Damásio + Enzo Canavero (4 microsserviços: Gateway, Auth, Account e Exchange)
+- :material-check-all: **Avaliação:** [checklist da rubrica](rubrica.md), item por item, com as evidências
 - :material-school: **Disciplina:** Plataformas — Insper, 2026.2
 - :material-robot: **IA:** feito com Claude Code — ver [Uso de IA](uso-de-ia.md)
 
@@ -45,7 +46,9 @@ flowchart LR
 - [x] Apresentação (slides) e roteiro do vídeo de 1–2 min — [Apresentação](projeto/apresentacao.md)
 - [x] **Execução real no EKS** (15/11/2026): cluster `eks-store` 1.37, RDS PostgreSQL, imagens no ECR, ELB público, HPA do gateway 1 → 10 réplicas; depois reduzido ao mínimo (2 nós **Spot**, 1 NAT, Postgres no cluster, ECR com lifecycle: US$ 0,34 → **0,21/h**) — [AWS e EKS](projeto/eks.md#deploy-real-no-eks-15112026), [Custos](projeto/custos.md#otimizacoes-aplicadas), [Teste de carga](projeto/load-testing.md#resultado-no-eks)
 - [x] API key da AwesomeAPI no EKS (a API recusa IPs da AWS sem chave): Secret `exchange-secrets`, smoke test pelo ELB **14/14** — [AWS e EKS](projeto/eks.md#deploy-real-no-eks-15112026)
-- [ ] Vídeo do teste de carga com HPA no EKS e vídeo de apresentação (1–2 min)
+- [x] **E2E no CI** hermético (stub da AwesomeAPI), smoke test 14/14 a cada push — [CI/CD](projeto/cicd.md#e2e-hermetico)
+- [x] **Vídeo do teste de carga com HPA** (gateway 1 → 10 réplicas e volta a 1) — [Teste de carga](projeto/load-testing.md#video-do-teste-de-carga)
+- [x] Apresentação (slides) e vídeo de 1–2 min (roteiro e montagem prontos; narração em gravação) — [Apresentação](projeto/apresentacao.md)
 
 ## Repositórios
 
@@ -53,7 +56,8 @@ O repositório principal agrega os serviços como **submódulos Git** em `api/`,
 
 | Repositório | Papel | Caminho |
 |-------------|-------|---------|
-| [`Projeto-PMA`](https://github.com/EuMiguelll/Projeto-PMA) | principal: docs, compose, k8s, scripts AWS, teste de carga | `/` |
+| [`Projeto-PMA`](https://github.com/EuMiguelll/Projeto-PMA) | principal: docs, compose, k8s, scripts AWS, teste de carga (entrega do Miguel) | `/` |
+| [`platform`](https://github.com/canavero/platform) | mesmo conteúdo, entrega do Enzo ([site](https://canavero.github.io/platform/)) | — |
 | [`gateway-service`](https://github.com/canavero/gateway-service) | API Gateway (Spring Cloud Gateway, WebFlux) | `api/gateway-service` |
 | [`auth`](https://github.com/canavero/auth) | interface do Auth (Feign + DTOs) | `api/auth` |
 | [`auth-service`](https://github.com/canavero/auth-service) | login, emissão e validação de JWT | `api/auth-service` |
@@ -69,5 +73,5 @@ cd Projeto-PMA && ./scripts/build.sh && docker compose up -d --build && ./script
 
 ## Vídeos
 
-- **Apresentação (1–2 min):** _link a adicionar após a gravação_ — roteiro em [Apresentação](projeto/apresentacao.md)
-- **Teste de carga + HPA:** _link a adicionar após a gravação_ — roteiro em [Teste de carga](projeto/load-testing.md)
+- **Apresentação (1–2 min):** [Apresentação e vídeo](projeto/apresentacao.md#videos)
+- **Teste de carga + HPA:** [Teste de carga](projeto/load-testing.md#video-do-teste-de-carga)
