@@ -7,7 +7,7 @@ são das execuções reais):
 | # | Bottleneck (tabela da disciplina) | Onde | Mitigação | Evidência |
 |---|-----------------------------------|------|-----------|-----------|
 | 1 | **Caching** | account, exchange | Redis + Spring Cache (`@Cacheable`/`@CacheEvict`), TTL | chaves no Redis, `cache_gets_total{result="hit"}` |
-| 2 | **Resiliência** (circuit breaker + retry) | auth → account, exchange → AwesomeAPI | Resilience4j | circuito `OPEN`, 503 em ~5 ms, volta a `CLOSED` |
+| 2 | **Resiliência** (circuit breaker + retry) | auth → account, exchange → BACEN | Resilience4j | circuito `OPEN`, 503 em ~5 ms, volta a `CLOSED` |
 | 3 | **Load balancing / proteção** (rate limiting) | gateway | `RequestRateLimiter` (token bucket no Redis) | 150 de 300 requisições → `429` |
 | 4 | **Observability** | todos | Actuator + Micrometer → Prometheus → Grafana | 4 targets `UP`, dashboard provisionado |
 | 5 | **Vulnerability scanning** | CI de todos os serviços | Trivy na imagem publicada | relatório HIGH/CRITICAL em cada build |
@@ -21,7 +21,7 @@ apresenta e defende os seus:
 | Integrante | Bottlenecks em destaque | Onde ver |
 |------------|-------------------------|----------|
 | **Miguel Damásio** | **3. Rate limiting** no gateway (token bucket no Redis → `429`) e **4. Observabilidade** (Prometheus + Grafana, dashboard *Store — Bottlenecks*) | [§ 3](#3-rate-limiting-gateway), [§ 4](#4-observabilidade-prometheus-grafana) |
-| **Enzo Canavero** | **1. Cache Redis** (account e exchange) e **2. Circuit breaker + retry** (auth → account, exchange → AwesomeAPI) | [§ 1](#1-cache-redis-account-e-exchange), [§ 2](#2-circuit-breaker-e-retry-auth-e-exchange) |
+| **Enzo Canavero** | **1. Cache Redis** (account e exchange) e **2. Circuit breaker + retry** (auth → account, exchange → BACEN) | [§ 1](#1-cache-redis-account-e-exchange), [§ 2](#2-circuit-breaker-e-retry-auth-e-exchange) |
 | Dupla | **5. Vulnerability scanning** (Trivy no CI) e **6. Escala horizontal** (HPA + Service + ELB) | [§ 5](#5-vulnerability-scanning-trivy-no-ci), [§ 6](#6-escala-horizontal-e-balanceamento-hpa-service-elb) |
 
 ![Dashboard Store — Bottlenecks no Grafana](../evidencias/grafana-bottlenecks.png)
@@ -35,8 +35,8 @@ parado) e hits/misses do cache Redis.*
 ## 1. Cache Redis (account e exchange)
 
 **Problema.** Toda requisição autenticada a `/auth/me` faz o auth chamar `GET /accounts/{id}`,
-que vai ao PostgreSQL; e todo `GET /exchanges/{from}/{to}` iria à AwesomeAPI — uma API externa,
-lenta (centenas de ms) e com limite de uso. Com o gateway escalando para várias réplicas, um
+que vai ao PostgreSQL; e todo `GET /exchanges/{from}/{to}` iria ao PTAX do BACEN — uma API externa,
+lenta (centenas de ms) e fora do nosso controle. Com o gateway escalando para várias réplicas, um
 cache **local** (por JVM) não seria compartilhado.
 
 **Solução.** Cache-aside com **Redis** compartilhado (hands-on 8): `spring-boot-starter-data-redis`
@@ -89,7 +89,7 @@ cache_gets_total{cache="exchanges",result="miss"} 2.0
 
 ## 2. Circuit breaker e retry (auth e exchange)
 
-**Problema.** Chamadas síncronas em cadeia propagam falhas: se o `account` ou a AwesomeAPI ficam
+**Problema.** Chamadas síncronas em cadeia propagam falhas: se o `account` ou o BACEN ficam
 lentos/fora, cada requisição segura uma thread até o timeout, o pool esgota e o serviço que
 chama também cai (falha em cascata — aula *Reliability patterns*).
 
@@ -115,7 +115,7 @@ chama também cai (falha em cascata — aula *Reliability patterns*).
     aberto vira **503**. Credencial errada (401) **não** conta como falha. Timeouts do Feign:
     1 s de conexão, 2 s de leitura.
 
-=== "exchange → AwesomeAPI (retry + circuit breaker)"
+=== "exchange → BACEN (retry + circuit breaker)"
 
     ```yaml
     resilience4j:

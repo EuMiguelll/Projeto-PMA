@@ -6,7 +6,6 @@
 #   JWT_SECRET_KEY=...            chave do JWT (padrão: gera uma aleatória)
 #   DATABASE_HOST=<endpoint RDS>  usa o RDS em vez do Postgres no cluster
 #   DATABASE_USERNAME / DATABASE_PASSWORD  credenciais do RDS
-#   EXCHANGE_PROVIDER_TOKEN=...   API key da AwesomeAPI (necessária na AWS: sem ela o provedor devolve 429)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # prefixo das imagens: usuário do Docker Hub ou registry do ECR (a conta não fica em nenhum arquivo)
@@ -30,10 +29,6 @@ if [[ -n "${DATABASE_HOST:-}" ]]; then
   apply_secret account-secrets \
     --from-literal=DATABASE_USERNAME="${DATABASE_USERNAME:-store}" \
     --from-literal=DATABASE_PASSWORD="${DATABASE_PASSWORD:?defina DATABASE_PASSWORD do RDS}"
-fi
-if [[ -n "${EXCHANGE_PROVIDER_TOKEN:-}" ]]; then
-  apply_secret exchange-secrets --from-literal=EXCHANGE_PROVIDER_TOKEN="$EXCHANGE_PROVIDER_TOKEN"
-  kubectl rollout restart deployment/exchange
 fi
 kubectl rollout restart deployment/auth deployment/account
 

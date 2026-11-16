@@ -27,8 +27,8 @@ jobs:
         run: ./scripts/build.sh
       - name: docker compose up
         env:
-          # A AwesomeAPI devolve 429 para IPs de nuvem sem API key: no CI o exchange fala com um
-          # stub (setup/provider-stub), e o teste não depende de quota de terceiros.
+          # No CI o exchange fala com um stub do PTAX do BACEN (setup/provider-stub): o teste fica
+          # determinístico e não depende de rede externa.
           EXCHANGE_PROVIDER_URL: http://provider-stub
         run: docker compose --profile e2e up -d --build db redis provider-stub account auth exchange gateway
       - name: Smoke test

@@ -85,12 +85,12 @@ mínimo de AWS.
 ### E2E hermético
 
 O E2E sobe a plataforma inteira com `docker compose` e roda o smoke test pelo gateway (14
-verificações). Os runners do GitHub recebem `429` da AwesomeAPI quando chamam sem API key, e o
-teste ficava vermelho por um motivo externo ao código. Por isso, no CI o `exchange` fala com um
-**stub** da AwesomeAPI (nginx com respostas fixas, `setup/provider-stub/default.conf`), que
-devolve a cotação de `USD-BRL` e `404` para pares inexistentes, como a API real. O teste fica
-determinístico e não depende de quota de terceiros. O provedor real foi validado no EKS (smoke
-test 14/14 pelo ELB, com a API key no Secret `exchange-secrets`).
+verificações). No CI o `exchange` fala com um **stub** do PTAX do BACEN (nginx com respostas
+fixas, `setup/provider-stub/default.conf`), que devolve as cotações de `USD` e `EUR` e uma lista
+vazia para moedas desconhecidas (o exchange responde `404`), como a API real. O teste fica
+determinístico e não depende de rede externa. O stub nasceu quando o exchange ainda usava a
+AwesomeAPI, que devolvia `429` aos runners do GitHub sem API key; o PTAX real foi testado pelo
+mesmo smoke test no compose ([evidência](../evidencias/smoke-test.txt)).
 
 ```bash
 EXCHANGE_PROVIDER_URL=http://provider-stub docker compose --profile e2e up -d --build \

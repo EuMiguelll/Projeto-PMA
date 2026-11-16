@@ -22,7 +22,7 @@ Objetivo: API de contas e câmbio com autenticação, resiliência e **escala au
 Internet ──► gateway (Spring Cloud Gateway: JWT + rate limit)
                 ├─► auth      (JJWT, circuit breaker) ──Feign──► account
                 ├─► account   (JPA + Flyway, cache) ──► PostgreSQL
-                └─► exchange  (RestClient, cache + retry + CB) ──► AwesomeAPI
+                └─► exchange  (RestClient, cache + retry + CB) ──► BACEN (PTAX)
              Redis: cache + rate limiter     Prometheus ► Grafana
 ```
 

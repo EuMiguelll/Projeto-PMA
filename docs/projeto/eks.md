@@ -29,14 +29,14 @@ flowchart TB
     priv1 & priv2 -.-> cp
     priv1 & priv2 -.->|pull| ecr
     priv1 & priv2 -->|NAT| pub1
-    pub1 & pub2 --> igw([Internet Gateway]) --> awesome[[AwesomeAPI]]
+    pub1 & pub2 --> igw([Internet Gateway]) --> bcb[[BACEN PTAX]]
 ```
 
 | Script | O que faz |
 |--------|-----------|
 | `aws/eks-create.sh` | VPC (CloudFormation) → `eksClusterRole` → cluster `eks-store` → `eksNodeRole` (CNI, WorkerNode, ECR read-only) → node group **Spot** `2 x t3.medium/t3a.medium` nas subnets privadas → kubeconfig → metrics-server |
 | `scripts/push-images.sh` | cria os repositórios no **ECR** (scan on push + lifecycle policy) e publica as 4 imagens `amd64` |
-| `k8s/deploy.sh` | Postgres, Redis e os 4 serviços com as imagens do ECR; segredos reais (JWT, API key); espera os rollouts |
+| `k8s/deploy.sh` | Postgres, Redis e os 4 serviços com as imagens do ECR; segredos reais (JWT); espera os rollouts |
 | `aws/rds-create.sh` | (opcional) RDS PostgreSQL 17 `db.t4g.micro` privado, SG liberando 5432 só para os nós |
 | `aws/eks-teardown.sh` | apaga ELB → RDS (se houver) → node groups → cluster → VPC → repositórios do ECR |
 
@@ -96,6 +96,10 @@ os nós a 42 % / 26 % de CPU e ~60 % de memória.
     e um `kubectl rollout restart deployment/exchange`, o smoke test pelo ELB passou a **14/14**
     (15/11, 23:21 UTC).
 
+    **Depois (16/11):** com o aviso do professor, o exchange passou a usar o PTAX do BACEN, que é
+    público e não pede chave. A API key e o Secret `exchange-secrets` deixaram de existir
+    ([Exchange](exchange.md)).
+
 ??? example "Saídas: `kubectl get nodes/pods/svc/hpa`, `kubectl top`, EKS, RDS e ECR"
 
     ```text
@@ -128,7 +132,7 @@ Cada repositório de serviço tem o seu `k8s/k8s.yaml` (como pede o exercício M
 |---------|----------|
 | `api/account-service/k8s/k8s.yaml` | Secret (usuário/senha do banco), ConfigMap (host, porta, base, Redis), Deployment, Service `ClusterIP`, HPA 1–3 |
 | `api/auth-service/k8s/k8s.yaml` | Secret (`JWT_SECRET_KEY`), ConfigMap, Deployment, Service `ClusterIP`, HPA 1–3 |
-| `api/exchange-service/k8s/k8s.yaml` | ConfigMap (Redis, URL do provedor), Secret opcional `exchange-secrets` (API key, criado pelo `deploy.sh`), Deployment, Service `ClusterIP`, HPA 1–3 |
+| `api/exchange-service/k8s/k8s.yaml` | ConfigMap (Redis, URL do PTAX), Deployment, Service `ClusterIP`, HPA 1–3 |
 | `api/gateway-service/k8s/k8s.yaml` | ConfigMap (Redis, rate limit), Deployment, Service **`LoadBalancer`** (portas 80 e 8080), HPA **1–10** |
 | `k8s/postgres.yaml` | Secret, ConfigMap, Deployment, Service do Postgres (sem volume, como no hands-on 5) |
 | `k8s/redis.yaml` | Deployment + Service do Redis (64 MB, LRU) |
@@ -165,8 +169,7 @@ Escolhas de configuração:
   (do Service `redis`) e o Spring falha ao converter a porta — achado no teste em kind
   ([Teste de carga](load-testing.md)).
 - **Segredos**: os manifests trazem valores de desenvolvimento; o `deploy.sh` os sobrescreve
-  (`JWT_SECRET_KEY` aleatória, senha do RDS gerada com `openssl rand` só no shell, API key da
-  AwesomeAPI).
+  (`JWT_SECRET_KEY` aleatória, senha do RDS gerada com `openssl rand` só no shell).
 
 ## Banco de dados: Postgres no cluster ou RDS
 

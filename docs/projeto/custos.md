@@ -90,7 +90,7 @@ Feitas em 15/11/2026, entre 22:40 e 23:00 UTC, com o cluster no ar.
 A troca foi feita com o cluster no ar: o node group Spot subiu ao lado do antigo, o EKS drenou
 os pods para ele, e o ELB seguiu respondendo 200. O smoke test pelo ELB deu os mesmos
 **11/14** de antes (as 3 falhas eram do câmbio, por falta da API key da AwesomeAPI; com a chave
-no Secret, **14/14**).
+no Secret, **14/14**; desde 16/11 o câmbio usa o PTAX do BACEN, sem chave).
 
 **Avaliado e não aplicado:**
 
@@ -250,7 +250,7 @@ flowchart LR
         pages[GitHub Pages]
     end
     subgraph saas [SaaS / APIs]
-        awesome[AwesomeAPI]
+        awesome[BACEN PTAX]
         gh[GitHub]
     end
 ```
@@ -265,7 +265,7 @@ flowchart LR
 | **CloudFormation** | PaaS (IaC) | VPC do template do enunciado | ordem de criação/remoção de 20+ recursos de rede |
 | **GitHub Actions** | PaaS (CI/CD) | build, teste, imagem, deploy | servidor Jenkins, agentes, plugins |
 | **GitHub Pages** | PaaS (hosting) | esta documentação | servidor web, TLS, CDN |
-| **AwesomeAPI** | SaaS (API) | cotações de câmbio; a partir da AWS exige API key (grátis até 100 mil req/mês) | coleta e atualização das cotações |
+| **BACEN (PTAX)** | API pública | cotações de câmbio; sem API key e sem custo, responde para IPs da AWS | coleta e atualização das cotações |
 
 **Alternativas mais "PaaS"**: rodar os 4 contêineres no **ECS Fargate** (sem nós nem control
 plane pago: 4 tarefas de 0,25 vCPU / 0,5 GB ≈ 4 × (0,25 × 0,04048 + 0,5 × 0,004445) × 730 ≈
@@ -328,5 +328,5 @@ SLIs medidos com as métricas que o projeto já exporta para o Prometheus:
 
 O que no projeto protege o SLO: readiness probes + rolling update (deploy sem downtime),
 circuit breakers (falha rápida e parcial em vez de cascata), cache (o exchange continua
-respondendo por até 60 s com a AwesomeAPI fora), rate limiting (protege contra sobrecarga), HPA
+respondendo por até 60 s com o BACEN fora), rate limiting (protege contra sobrecarga), HPA
 (capacidade acompanha a demanda) e nós em 2 AZs.

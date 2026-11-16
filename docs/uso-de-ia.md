@@ -30,7 +30,7 @@ feito com ela e o que foi feito pelos integrantes. Neste projeto, a divisão foi
 | Código dos 7 módulos | escreveu interfaces, serviços, testes, `Dockerfile` e manifests | `./mvnw` com testes em cada módulo; imagens construídas |
 | Integração | `compose.yaml`, smoke test, Prometheus/Grafana | smoke test 14/14 no compose e no kind; bottlenecks forçados ao vivo (Redis, circuitos, 429) |
 | Kubernetes / AWS | manifests, `deploy.sh`, scripts de EKS/RDS/teardown, Runbook | `kubeconform`, `shellcheck`, deploy em kind e **deploy real no EKS** (conta do grupo, 15/11/2026): smoke test pelo ELB e HPA 1 → 10 |
-| CI/CD | workflows do GitHub Actions; stub da AwesomeAPI para o E2E | `actionlint`; execuções verdes no GitHub Actions e E2E reproduzido localmente (14/14) |
+| CI/CD | workflows do GitHub Actions; stub do provedor de câmbio para o E2E | `actionlint`; execuções verdes no GitHub Actions e E2E reproduzido localmente (14/14) |
 | Custos | consultou a AWS Price List e montou os cenários | valores conferidos nos arquivos oficiais de preço e no AWS Pricing Calculator |
 | Documentação | rascunhos deste site, do roteiro do vídeo, do checklist da rubrica e dos slides | revisão nossa e `mkdocs build --strict` |
 | Vídeos e slides | gravou os terminais (VHS) e o Grafana (Playwright), desenhou os slides e montou os vídeos (`ffmpeg`) no tempo do roteiro | gravações reais: smoke test contra o ELB do EKS, bottlenecks e Grafana no compose, HPA num cluster kind |
@@ -51,7 +51,9 @@ A IA errou, e os erros só apareceram porque mandamos executar tudo, não apenas
 - no EKS, a AwesomeAPI devolveu `429 QuotaExceeded` para os IPs dos NAT Gateways (do Mac, 200):
   só o deploy real mostrou que o exchange precisa de API key na nuvem;
 - o E2E do GitHub Actions falhava pelo mesmo `429`, por um motivo externo ao código: trocamos a
-  API real por um stub no CI.
+  API real por um stub no CI;
+- com o aviso do professor (16/11) de que APIs gratuitas recusam IPs da AWS, trocamos a
+  AwesomeAPI pelo PTAX do BACEN, que dispensa chave (o stub do CI passou a imitar o PTAX).
 
 ## Responsabilidade
 

@@ -28,7 +28,7 @@ flowchart LR
         exchange -.-> redis
         gw -.-> redis
     end
-    exchange -->|HTTPS| awesome[[AwesomeAPI]]
+    exchange -->|HTTPS| awesome[[BACEN PTAX]]
     subgraph obs [Observabilidade]
         prom[Prometheus] --> graf[Grafana]
     end
@@ -40,7 +40,7 @@ flowchart LR
 | gateway | `store.gateway` | 8080 (única exposta) | `GET /health-check`, `GET /info`, rotas `/auth/**`, `/accounts/**`, `/exchanges/**` | auth, Redis |
 | auth | `store.auth` | 8080 | `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /auth/solve`, `GET /auth/logout` | account |
 | account | `store.account` | 8080 | `POST /accounts`, `GET /accounts`, `GET/DELETE /accounts/{id}`, `POST /accounts/login` | PostgreSQL, Redis |
-| exchange | `store.exchange` | 8080 | `GET /exchanges/{from}/{to}` | AwesomeAPI, Redis |
+| exchange | `store.exchange` | 8080 | `GET /exchanges/{from}/{to}` | BACEN (PTAX), Redis |
 
 Todos expõem `/<prefixo>/actuator/health/{liveness,readiness}` (probes do Kubernetes) e
 `/<prefixo>/actuator/prometheus` (métricas), com o prefixo do próprio serviço como no hands-on 6.
@@ -51,7 +51,7 @@ Todos expõem `/<prefixo>/actuator/health/{liveness,readiness}` (probes do Kuber
 |--------|------------|
 | Linguagem / framework | Java 25, Spring Boot 4.1.1, Spring Cloud 2025.1.3 |
 | Gateway | Spring Cloud Gateway Server WebFlux (reativo, Netty) |
-| Comunicação interna | OpenFeign (auth → account), RestClient (exchange → AwesomeAPI), WebClient (gateway → auth) |
+| Comunicação interna | OpenFeign (auth → account), RestClient (exchange → BACEN), WebClient (gateway → auth) |
 | Segurança | JWT HS256 (JJWT 0.13) em cookie `HttpOnly`, validado no gateway |
 | Persistência | PostgreSQL 17, Spring Data JPA, Flyway |
 | Resiliência | Resilience4j 2.4 (circuit breaker, retry), rate limiter Redis do Spring Cloud Gateway |
@@ -84,7 +84,7 @@ sequenceDiagram
     G->>E: GET /exchanges/USD/BRL + header id-account
     E->>R: cache exchanges::USD-BRL?
     alt miss
-        E->>E: AwesomeAPI (retry + circuit breaker)
+        E->>E: BACEN PTAX (retry + circuit breaker)
         E->>R: SET (TTL 60 s)
     end
     E-->>U: {"sell":5.668,"buy":5.6666,"date":"...","id-account":"..."}

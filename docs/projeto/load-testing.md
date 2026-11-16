@@ -69,7 +69,7 @@ mas pelo DNS público do ELB: as requisições saem pelo NAT e entram pelo Class
 | Requisições | **406.170** em ~3 min (**2.215 req/s**) |
 | Latência `/info` | média 37 ms · mediana 22 ms · **p95 123 ms** · máx. 921 ms |
 | Erros `/info` | **0,00 %** (thresholds `p(95)<800ms` e `rate<0.01` ✓) |
-| Fluxo autenticado | login 100 % · `/auth/me` 98 % (2 de 180 falharam no pico) · câmbio 0 % (AwesomeAPI devolve 429 para a AWS, ver [AWS e EKS](eks.md#deploy-real-no-eks-15112026)) |
+| Fluxo autenticado | login 100 % · `/auth/me` 98 % (2 de 180 falharam no pico) · câmbio 0 % (a AwesomeAPI devolvia 429 para a AWS, ver [AWS e EKS](eks.md#deploy-real-no-eks-15112026); depois trocamos para o PTAX do BACEN) |
 | HPA do gateway | 1 → 4 → 8 → **10 em ~47 s**; CPU por pod ainda em ~100–200 % no máximo de réplicas |
 
 !!! warning "Limite encontrado: memória do node group"
