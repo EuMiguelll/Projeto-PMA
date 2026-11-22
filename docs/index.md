@@ -47,7 +47,7 @@ flowchart LR
 - [x] **Execução real no EKS** (15/11/2026): cluster `eks-store` 1.37, RDS PostgreSQL, imagens no ECR, ELB público, HPA do gateway 1 → 10 réplicas; depois reduzido ao mínimo (2 nós **Spot**, 1 NAT, Postgres no cluster, ECR com lifecycle: US$ 0,34 → **0,21/h**) — [AWS e EKS](projeto/eks.md#deploy-real-no-eks-15112026), [Custos](projeto/custos.md#otimizacoes-aplicadas), [Teste de carga](projeto/load-testing.md#resultado-no-eks)
 - [x] Câmbio pelo PTAX do BACEN (público, sem API key): a AwesomeAPI recusava os IPs da AWS sem chave (com a chave, smoke test pelo ELB **14/14**); trocamos após o aviso do professor — [Exchange](projeto/exchange.md) — [AWS e EKS](projeto/eks.md#deploy-real-no-eks-15112026)
 - [x] **Exchange em Python/FastAPI** (como pede o enunciado): o serviço do BACEN da disciplina em `api/exchange-py`, com Dockerfile uv, 37 testes, métricas no Grafana e falha rápida medida (10 requisições com a PTAX lenta: ~3 s contra ~30 s do original); smoke test **18/18** com a PTAX real — [Exchange](projeto/exchange.md)
-- [x] **E2E no CI** hermético (stub do PTAX do BACEN), smoke test 14/14 a cada push — [CI/CD](projeto/cicd.md#e2e-hermetico)
+- [x] **E2E no CI** hermético (stub da PTAX do BACEN), smoke test a cada push: 14 verificações até 21/11 e **18** com o exchange-py (7 do câmbio), 18/18 também com a PTAX real — [CI/CD](projeto/cicd.md#e2e-hermetico)
 - [x] **Vídeo do teste de carga com HPA** (gateway 1 → 10 réplicas e volta a 1) — [Teste de carga](projeto/load-testing.md#video-do-teste-de-carga)
 - [x] **Apresentação** (slides) e **vídeo de 1 min 51 s** narrado — [Apresentação](projeto/apresentacao.md)
 
