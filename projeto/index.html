@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot no EKS">
+        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot e FastAPI no EKS">
       
       
         <meta name="author" content="Enzo Canavero e Miguel Damásio">
@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -1015,6 +1015,10 @@ interface</strong> (<code>account</code>, <code>auth</code>, <code>exchange</cod
 em <code>record</code>) e um <strong>módulo de serviço</strong> executável (<code>*-service</code>) que implementa essa interface.
 Assim, quem precisa chamar um serviço (ex.: o <code>auth-service</code> chamando o <code>account</code>) só depende
 do jar da interface e o Feign gera o cliente HTTP.</p>
+<p>O <strong>Exchange</strong> é a exceção: o enunciado pede Python, então ele é o serviço <strong>FastAPI</strong> da página
+<em>API de Câmbio: serviço do BACEN</em> da disciplina, em <code>api/exchange-py/</code> do repositório principal,
+sem módulo de interface (o contrato é o HTTP do enunciado). A versão Java anterior
+(<code>exchange</code> + <code>exchange-service</code>) continua nos submódulos, fora do gateway (<a href="exchange/">Exchange</a>).</p>
 <h2 id="componentes">Componentes</h2>
 <pre class="mermaid"><code>flowchart LR
     internet([Internet]) --&gt;|":80 / :8080"| gw
@@ -1022,24 +1026,23 @@ do jar da interface e o Feign gera o cliente HTTP.</p>
         gw["gateway-service&lt;br/&gt;Spring Cloud Gateway&lt;br/&gt;JWT filter · rate limit"]
         auth["auth-service&lt;br/&gt;JWT (JJWT)&lt;br/&gt;circuit breaker"]
         account["account-service&lt;br/&gt;JPA · Flyway&lt;br/&gt;cache"]
-        exchange["exchange-service&lt;br/&gt;RestClient&lt;br/&gt;cache · retry · CB"]
+        exchange["exchange-py&lt;br/&gt;FastAPI · httpx&lt;br/&gt;cache em memória · stale"]
         db[(PostgreSQL 17)]
         redis[(Redis 7)]
         gw --&gt;|/auth/**| auth
         gw --&gt;|/accounts/**| account
-        gw --&gt;|/exchanges/**| exchange
+        gw --&gt;|"/exchange/**, /exchanges/**"| exchange
         gw --&gt;|POST /auth/solve| auth
         auth --&gt;|Feign: /accounts/login, /accounts/:id| account
         account --&gt; db
         account -.-&gt; redis
-        exchange -.-&gt; redis
         gw -.-&gt; redis
     end
-    exchange --&gt;|HTTPS| awesome[[AwesomeAPI]]
+    exchange --&gt;|HTTPS| awesome[[BACEN PTAX]]
     subgraph obs [Observabilidade]
         prom[Prometheus] --&gt; graf[Grafana]
     end
-    prom -.scrape /*/actuator/prometheus.-&gt; trusted</code></pre>
+    prom -.scrape /*/actuator/prometheus e /metrics.-&gt; trusted</code></pre>
 <table>
 <thead>
 <tr>
@@ -1055,7 +1058,7 @@ do jar da interface e o Feign gera o cliente HTTP.</p>
 <td>gateway</td>
 <td><code>store.gateway</code></td>
 <td style="text-align: right;">8080 (única exposta)</td>
-<td><code>GET /health-check</code>, <code>GET /info</code>, rotas <code>/auth/**</code>, <code>/accounts/**</code>, <code>/exchanges/**</code></td>
+<td><code>GET /health-check</code>, <code>GET /info</code>, rotas <code>/auth/**</code>, <code>/accounts/**</code>, <code>/exchange/**</code>, <code>/exchanges/**</code></td>
 <td>auth, Redis</td>
 </tr>
 <tr>
@@ -1074,15 +1077,17 @@ do jar da interface e o Feign gera o cliente HTTP.</p>
 </tr>
 <tr>
 <td>exchange</td>
-<td><code>store.exchange</code></td>
-<td style="text-align: right;">8080</td>
-<td><code>GET /exchanges/{from}/{to}</code></td>
-<td>AwesomeAPI, Redis</td>
+<td><code>api/exchange-py/main.py</code> (FastAPI)</td>
+<td style="text-align: right;">8000</td>
+<td><code>GET /exchanges/{from}/{to}</code> (e <code>/exchange/...</code>), <code>GET /exchange/currencies</code></td>
+<td>BACEN (PTAX)</td>
 </tr>
 </tbody>
 </table>
-<p>Todos expõem <code>/&lt;prefixo&gt;/actuator/health/{liveness,readiness}</code> (probes do Kubernetes) e
-<code>/&lt;prefixo&gt;/actuator/prometheus</code> (métricas), com o prefixo do próprio serviço como no hands-on 6.</p>
+<p>Os serviços Java expõem <code>/&lt;prefixo&gt;/actuator/health/{liveness,readiness}</code> (probes do
+Kubernetes) e <code>/&lt;prefixo&gt;/actuator/prometheus</code> (métricas), com o prefixo do próprio serviço como
+no hands-on 6; o <code>exchange-py</code> expõe <code>/health</code> e <code>/metrics</code> (com os mesmos nomes de métricas
+HTTP do Micrometer), fora das rotas do gateway.</p>
 <h2 id="stack">Stack</h2>
 <table>
 <thead>
@@ -1094,7 +1099,7 @@ do jar da interface e o Feign gera o cliente HTTP.</p>
 <tbody>
 <tr>
 <td>Linguagem / framework</td>
-<td>Java 25, Spring Boot 4.1.1, Spring Cloud 2025.1.3</td>
+<td>Java 25, Spring Boot 4.1.1, Spring Cloud 2025.1.3; exchange: Python 3.12, FastAPI, uvicorn</td>
 </tr>
 <tr>
 <td>Gateway</td>
@@ -1102,7 +1107,7 @@ do jar da interface e o Feign gera o cliente HTTP.</p>
 </tr>
 <tr>
 <td>Comunicação interna</td>
-<td>OpenFeign (auth → account), RestClient (exchange → AwesomeAPI), WebClient (gateway → auth)</td>
+<td>OpenFeign (auth → account), httpx assíncrono (exchange → BACEN), WebClient (gateway → auth)</td>
 </tr>
 <tr>
 <td>Segurança</td>
@@ -1114,19 +1119,19 @@ do jar da interface e o Feign gera o cliente HTTP.</p>
 </tr>
 <tr>
 <td>Resiliência</td>
-<td>Resilience4j 2.4 (circuit breaker, retry), rate limiter Redis do Spring Cloud Gateway</td>
+<td>Resilience4j 2.4 (circuit breaker, retry), rate limiter Redis do Spring Cloud Gateway; exchange: lock por moeda, <em>stale</em> e falha rápida</td>
 </tr>
 <tr>
 <td>Cache</td>
-<td>Redis 7 + Spring Cache</td>
+<td>Redis 7 + Spring Cache (account); memória do processo (exchange)</td>
 </tr>
 <tr>
 <td>Observabilidade</td>
-<td>Actuator + Micrometer → Prometheus → Grafana</td>
+<td>Actuator + Micrometer e prometheus-client (exchange) → Prometheus → Grafana</td>
 </tr>
 <tr>
 <td>Build</td>
-<td>Maven Wrapper (<code>./mvnw</code>), Docker (<code>eclipse-temurin:25-jre</code>)</td>
+<td>Maven Wrapper (<code>./mvnw</code>), Docker (<code>eclipse-temurin:25-jre</code>); exchange: uv + <code>uv.lock</code>, Docker (<code>python:3.12-slim</code>)</td>
 </tr>
 <tr>
 <td>Orquestração</td>
@@ -1145,7 +1150,7 @@ do jar da interface e o Feign gera o cliente HTTP.</p>
     participant G as gateway
     participant A as auth
     participant C as account
-    participant E as exchange
+    participant E as exchange-py
     participant R as Redis
     U-&gt;&gt;G: POST /auth/login {email, password}
     G-&gt;&gt;A: (rota aberta)
@@ -1157,12 +1162,12 @@ do jar da interface e o Feign gera o cliente HTTP.</p>
     G-&gt;&gt;A: POST /auth/solve {token}
     A--&gt;&gt;G: {idAccount}
     G-&gt;&gt;E: GET /exchanges/USD/BRL + header id-account
-    E-&gt;&gt;R: cache exchanges::USD-BRL?
-    alt miss
-        E-&gt;&gt;E: AwesomeAPI (retry + circuit breaker)
-        E-&gt;&gt;R: SET (TTL 60 s)
+    E-&gt;&gt;E: cotação do USD no cache em memória?
+    alt miss (ou vencida)
+        E-&gt;&gt;E: PTAX do BCB (lock por moeda, e se falhar: stale ou 502)
+        E-&gt;&gt;E: guarda por 5 min
     end
-    E--&gt;&gt;U: {"sell":5.668,"buy":5.6666,"date":"...","id-account":"..."}</code></pre>
+    E--&gt;&gt;U: {"sell":5.8889,"buy":5.8883,"date":"2026-11-19 13:04:18","id-account":"..."} + X-Cache</code></pre>
 <p>O gateway <strong>remove</strong> qualquer header <code>id-account</code> vindo do cliente (<code>RemoveRequestHeader</code>) e só
 o recoloca a partir do token validado — os serviços confiam nesse header sem precisar validar
 JWT (testado no smoke test: um <code>id-account: hacker</code> forjado é descartado).</p>
@@ -1171,21 +1176,24 @@ JWT (testado no smoke test: um <code>id-account: hacker</code> forjado é descar
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── api/                      # submódulos (um repositório por módulo)
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│   ├── account/  account-service/
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│   ├── auth/     auth-service/
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│   ├── exchange/ exchange-service/
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│   └── gateway-service/
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├── aws/                      # eks-create.sh, rds-create.sh, eks-teardown.sh, template da VPC
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>├── k8s/                      # postgres.yaml, redis.yaml, ingress.yaml, deploy.sh
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>├── load-test/                # busybox.sh (enunciado), k6.js, README (roteiro do vídeo)
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>├── setup/                    # prometheus.yml, provisionamento do Grafana (datasource + dashboard)
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>├── scripts/                  # build.sh, smoke-test.sh, push-images.sh
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>├── presentation/slides.md    # slides (Marp)
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>├── docs/ + mkdocs.yml        # esta documentação
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>├── compose.yaml
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>├── AWS_RUNBOOK.md
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>└── publish.sh                # cria os repositórios no GitHub e faz o push
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│   ├── exchange-py/          # Exchange em Python/FastAPI (pasta deste repositório, não submódulo)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│   ├── exchange/ exchange-service/   # versão anterior do Exchange (Java)
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│   └── gateway-service/
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>├── aws/                      # eks-create.sh, rds-create.sh, eks-teardown.sh, template da VPC
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>├── k8s/                      # postgres.yaml, redis.yaml, ingress.yaml, deploy.sh
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>├── load-test/                # busybox.sh (enunciado), k6.js, README (roteiro do vídeo)
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>├── setup/                    # prometheus.yml, provisionamento do Grafana (datasource + dashboard)
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>├── scripts/                  # build.sh, smoke-test.sh, push-images.sh
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>├── presentation/slides.md    # slides (Marp)
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>├── docs/ + mkdocs.yml        # esta documentação
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>├── compose.yaml
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>├── AWS_RUNBOOK.md
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>└── publish.sh                # cria os repositórios no GitHub e faz o push
 </code></pre></div>
 <p>Cada repositório de serviço contém: código, testes, <code>Dockerfile</code>, <code>k8s/k8s.yaml</code> (como pede o
-exercício MiniKube) e <code>.github/workflows/ci.yml</code>.</p>
+exercício MiniKube) e <code>.github/workflows/ci.yml</code>. O <code>api/exchange-py</code> tem o mesmo formato
+(<code>main.py</code>, <code>tests/</code>, <code>Dockerfile</code>, <code>k8s/k8s.yaml</code>), com o workflow em
+<code>.github/workflows/exchange-py.yml</code> do repositório principal.</p>
 
 
 
@@ -1247,6 +1255,10 @@ exercício MiniKube) e <code>.github/workflows/ci.yml</code>.</p>
     
     
       <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
       
     
   </body>

@@ -1,0 +1,51 @@
+# exchange-py: cache em memória, PTAX fora e PTAX lenta — 2026-11-22 03:35 UTC (22/11 00:35 em Brasília)
+# docker compose local; cada cenário recria o contêiner do exchange (cache vazio)
+
+## 1. Carga leve pelo gateway com a PTAX REAL (CACHE_SECONDS=300): 300 requisições, 20 em paralelo
+$ docker compose up -d exchange   # PTAX_URL padrão (olinda.bcb.gov.br)
+GET /exchanges/USD/BRL -> 200 X-Cache=miss 0.905022s {"sell":5.8889,"buy":5.8883,"date":"2026-11-19 13:04:18","id-account":"09a4118b-4529-4750-ae2a-7cd026ef5b65"}
+$ seq 300 | xargs -P 20 -I{} curl -s -b cookies.txt -o /dev/null -D - http://localhost:8080/exchanges/USD/BRL | grep -ioE '^HTTP/1.1 [0-9]+|^x-cache: [a-z]+' | sort | uniq -c
+    131 HTTP/1.1 200
+    169 HTTP/1.1 429
+    131 x-cache: hit
+  (429 = rate limiting do gateway: 50 req/s e rajada de 100 por IP; a PTAX nem fica sabendo)
+$ curl -s exchange:8000/metrics | grep -E '^(ptax_requests_total|exchange_rate_responses_total)'
+    ptax_requests_total{outcome="ok"} 1.0
+    exchange_rate_responses_total{cache="miss"} 1.0
+    exchange_rate_responses_total{cache="hit"} 131.0
+  -> 301 requisições ao gateway: 169 barradas pelo rate limiting, 132 cotações
+     (1 miss + 131 hit) e 1 chamada(s) à PTAX (o dólar; o real vale 1)
+
+## 2. PTAX fora do ar, com e sem cotação guardada (stub da PTAX parado; CACHE_SECONDS=5, RETRY_SECONDS=15)
+$ PTAX_URL=http://provider-stub CACHE_SECONDS=5 RETRY_SECONDS=15 docker compose --profile e2e up -d exchange provider-stub
+GET /exchange/USD/EUR -> 200 X-Cache=miss 0.016298s {"sell":0.861267,"buy":0.860009,"date":"2026-11-13 13:09:27","id-account":"2c7f9084-8158-4adf-8b1b-5c6634b43bbf"}
+$ docker compose stop provider-stub && sleep 6   # a cotação vence (5 s) e a PTAX some
+GET /exchange/USD/EUR -> 200 X-Cache=stale 0.018838s {"sell":0.861267,"buy":0.860009,"date":"2026-11-13 13:09:27","id-account":"2c7f9084-8158-4adf-8b1b-5c6634b43bbf"}
+GET /exchange/USD/EUR -> 200 X-Cache=stale 0.009350s {"sell":0.861267,"buy":0.860009,"date":"2026-11-13 13:09:27","id-account":"2c7f9084-8158-4adf-8b1b-5c6634b43bbf"}
+GET /exchange/GBP/BRL -> 502 X-Cache=- 0.011373s {"detail":"PTAX unavailable and nothing cached for GBP"}
+GET /exchange/GBP/BRL -> 502 X-Cache=- 0.008538s {"detail":"PTAX unavailable and nothing cached for GBP"}
+$ curl -s exchange:8000/metrics | grep ptax_requests_total
+    ptax_requests_total{outcome="ok"} 2.0
+    ptax_requests_total{outcome="error"} 3.0
+  -> stale: a cotação velha segue valendo; GBP nunca foi buscada: 502 sem detalhes internos;
+     a 2ª chamada de GBP não foi à PTAX (3 erros = USD + EUR + GBP, uma vez cada, em 15 s)
+$ docker compose start provider-stub && sleep 16   # PTAX de volta; passa o RETRY_SECONDS
+GET /exchange/USD/EUR -> 200 X-Cache=miss 0.016724s {"sell":0.861267,"buy":0.860009,"date":"2026-11-13 13:09:27","id-account":"2c7f9084-8158-4adf-8b1b-5c6634b43bbf"}
+
+## 3. PTAX lenta: um servidor que leva 10 s para responder (o exchange desiste no PTAX_TIMEOUT de 3 s),
+##    10 requisições simultâneas a USD/BRL, sem cotação guardada. Lado a lado: o main.py original
+##    da página do BACEN e o exchange-py, as duas imagens com PTAX_URL=http://ptax-lenta:8000
+$ seq 10 | xargs -P 10 -I{} curl -s -H 'id-account: x' -o /dev/null -w '%{http_code}:%{time_total}s\n' <original>/exchange/USD/BRL | sort -t: -g -k2
+502:3.097551s 502:6.099059s 502:9.102264s 502:12.102751s 502:15.101822s 502:18.103257s 
+502:21.104009s 502:24.102763s 502:27.105808s 502:30.102727s 
+  corpo do 502: {"detail":"PTAX unavailable: ReadTimeout('')"}
+$ seq 10 | xargs -P 10 -I{} curl -s -H 'id-account: x' -o /dev/null -w '%{http_code}:%{time_total}s\n' <exchange-py>/exchange/USD/BRL | sort -t: -g -k2
+502:2.995339s 502:2.997153s 502:2.998120s 502:2.998123s 502:3.000704s 502:3.001826s 502:3.005796s 
+502:3.008144s 502:3.008650s 502:3.009044s 
+  corpo do 502: {"detail":"PTAX unavailable and nothing cached for EUR"}
+  -> original: cada requisição que esperava o lock tentou a PTAX de novo, uma depois da outra
+     (a 10ª esperou ~30 s). exchange-py: 1 chamada, a falha fica marcada por RETRY_SECONDS e as
+     outras 9 recebem o 502 assim que o lock libera (todas em ~3 s). O 502 do exchange-py também
+     não expõe a exceção interna (ReadTimeout) que o original devolve ao cliente.
+
+# fim: exchange de volta à PTAX real (compose padrão)

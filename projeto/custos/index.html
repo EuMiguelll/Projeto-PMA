@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot no EKS">
+        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot e FastAPI no EKS">
       
       
         <meta name="author" content="Enzo Canavero e Miguel Damásio">
@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -1504,7 +1504,7 @@ tempo ligado. Por isso o teardown automático de segurança caiu de 8 h para <st
 <p>A troca foi feita com o cluster no ar: o node group Spot subiu ao lado do antigo, o EKS drenou
 os pods para ele, e o ELB seguiu respondendo 200. O smoke test pelo ELB deu os mesmos
 <strong>11/14</strong> de antes (as 3 falhas eram do câmbio, por falta da API key da AwesomeAPI; com a chave
-no Secret, <strong>14/14</strong>).</p>
+no Secret, <strong>14/14</strong>; desde 16/11 o câmbio usa o PTAX do BACEN, sem chave).</p>
 <p><strong>Avaliado e não aplicado:</strong></p>
 <table>
 <thead>
@@ -1876,7 +1876,7 @@ no cluster. O custo é de centavos. O Docker Hub (padrão do hands-on 4) continu
         pages[GitHub Pages]
     end
     subgraph saas [SaaS / APIs]
-        awesome[AwesomeAPI]
+        awesome[BACEN PTAX]
         gh[GitHub]
     end</code></pre>
 <table>
@@ -1938,9 +1938,9 @@ no cluster. O custo é de centavos. O Docker Hub (padrão do hands-on 4) continu
 <td>servidor web, TLS, CDN</td>
 </tr>
 <tr>
-<td><strong>AwesomeAPI</strong></td>
-<td>SaaS (API)</td>
-<td>cotações de câmbio; a partir da AWS exige API key (grátis até 100 mil req/mês)</td>
+<td><strong>BACEN (PTAX)</strong></td>
+<td>API pública</td>
+<td>cotações de câmbio; sem API key e sem custo, responde para IPs da AWS</td>
 <td>coleta e atualização das cotações</td>
 </tr>
 </tbody>
@@ -1987,9 +1987,9 @@ ou em outra nuvem); o custo fixo do control plane (US$ 73) é o preço dessa por
 </tbody>
 </table>
 <h3 id="disponibilidade-composta-componentes-em-serie">Disponibilidade composta (componentes em série)</h3>
-<p>$$
+<div class="arithmatex">\[
 A = A_{ELB} \times A_{EKS} \times A_{EC2} \times A_{DB}
-$$</p>
+\]</div>
 <table>
 <thead>
 <tr>
@@ -2072,8 +2072,8 @@ SLA. Para garantir 99,5 % com folga, use o cenário C.</p>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="o">/</span><span class="w"> </span><span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">http_server_requests_seconds_count</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">"</span><span class="s">GatewayMetrics</span><span class="p">"}[</span><span class="s">1h</span><span class="p">]</span><span class="o">)))</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">0.005</span>
 </code></pre></div>
 <p>O que no projeto protege o SLO: readiness probes + rolling update (deploy sem downtime),
-circuit breakers (falha rápida e parcial em vez de cascata), cache (o exchange continua
-respondendo por até 60 s com a AwesomeAPI fora), rate limiting (protege contra sobrecarga), HPA
+circuit breakers (falha rápida e parcial em vez de cascata), cache (com o BACEN fora, o exchange
+continua respondendo com a última cotação, marcada <code>X-Cache: stale</code>), rate limiting (protege contra sobrecarga), HPA
 (capacidade acompanha a demanda) e nós em 2 AZs.</p>
 
 
@@ -2136,6 +2136,10 @@ respondendo por até 60 s com a AwesomeAPI fora), rate limiting (protege contra 
     
     
       <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
       
     
   </body>

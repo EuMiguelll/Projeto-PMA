@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot no EKS">
+        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot e FastAPI no EKS">
       
       
         <meta name="author" content="Enzo Canavero e Miguel Damásio">
@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -1373,7 +1373,11 @@ No fim imprime a URL do ELB.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nv">ELB</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>svc<span class="w"> </span>gateway<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.status.loadBalancer.ingress[0].hostname}'</span><span class="k">)</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>curl<span class="w"> </span>http://<span class="nv">$ELB</span>/health-check<span class="w">          </span><span class="c1"># {"hostname":"gateway-..."}</span>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>curl<span class="w"> </span>http://<span class="nv">$ELB</span>/info
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>./scripts/smoke-test.sh<span class="w"> </span>http://<span class="nv">$ELB</span><span class="w">    </span><span class="c1"># registro, login, rotas seguras, exchange</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>./scripts/smoke-test.sh<span class="w"> </span>http://<span class="nv">$ELB</span><span class="w">    </span><span class="c1"># registro, login, rotas seguras, exchange (18 verificações)</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="c1"># a PTAX do BCB responde da AWS? Uma chamada de dentro de um pod, como pede a página do BACEN</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>kubectl<span class="w"> </span>run<span class="w"> </span>ptax<span class="w"> </span>--rm<span class="w"> </span>-i<span class="w"> </span>--restart<span class="o">=</span>Never<span class="w"> </span>--image<span class="o">=</span>curlimages/curl:8.17.0<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>-w<span class="w"> </span><span class="s1">'\nHTTP %{http_code}\n'</span><span class="w"> </span><span class="s1">'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/Moedas?$format=json&amp;$top=1'</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Cookie <code>Secure</code> em HTTP</p>
@@ -1393,23 +1397,25 @@ uma role que só aceita os repositórios de serviço na branch <code>main</code>
 <a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="s1">  "Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"sts:AssumeRoleWithWebIdentity",</span>
 <a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="s1">  "Principal":{"Federated":"arn:aws:iam::'</span><span class="s2">"</span><span class="nv">$ACCOUNT</span><span class="s2">"</span><span class="s1">':oidc-provider/token.actions.githubusercontent.com"},</span>
 <a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="s1">  "Condition":{"StringEquals":{"token.actions.githubusercontent.com:aud":"sts.amazonaws.com"},</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="s1">               "StringLike":{"token.actions.githubusercontent.com:sub":"repo:&lt;owner&gt;/*-service:ref:refs/heads/main"}}}]}'</span>
-<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>aws<span class="w"> </span>iam<span class="w"> </span>attach-role-policy<span class="w"> </span>--role-name<span class="w"> </span>github-actions-store<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">  </span>--policy-arn<span class="w"> </span>arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
-<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>aws<span class="w"> </span>iam<span class="w"> </span>put-role-policy<span class="w"> </span>--role-name<span class="w"> </span>github-actions-store<span class="w"> </span>--policy-name<span class="w"> </span>eks-describe<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">  </span>--policy-document<span class="w"> </span><span class="s1">'{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"eks:DescribeCluster","Resource":"*"}]}'</span>
-<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>aws<span class="w"> </span>eks<span class="w"> </span>create-access-entry<span class="w"> </span>--cluster-name<span class="w"> </span>eks-store<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">  </span>--principal-arn<span class="w"> </span><span class="s2">"arn:aws:iam::</span><span class="nv">$ACCOUNT</span><span class="s2">:role/github-actions-store"</span>
-<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>aws<span class="w"> </span>eks<span class="w"> </span>associate-access-policy<span class="w"> </span>--cluster-name<span class="w"> </span>eks-store<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="w">  </span>--principal-arn<span class="w"> </span><span class="s2">"arn:aws:iam::</span><span class="nv">$ACCOUNT</span><span class="s2">:role/github-actions-store"</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="w">  </span>--policy-arn<span class="w"> </span>arn:aws:eks::aws:cluster-access-policy/AmazonEKSEditPolicy<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="w">  </span>--access-scope<span class="w"> </span><span class="nv">type</span><span class="o">=</span>namespace,namespaces<span class="o">=</span>default
-<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a>
-<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a><span class="k">for</span><span class="w"> </span>r<span class="w"> </span><span class="k">in</span><span class="w"> </span>account-service<span class="w"> </span>auth-service<span class="w"> </span>exchange-service<span class="w"> </span>gateway-service<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="w">  </span>gh<span class="w"> </span>variable<span class="w"> </span><span class="nb">set</span><span class="w"> </span>AWS_ECR<span class="w"> </span>-b<span class="w"> </span><span class="nb">true</span><span class="w"> </span>-R<span class="w"> </span><span class="s2">"&lt;owner&gt;/</span><span class="nv">$r</span><span class="s2">"</span>
-<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="w">  </span>gh<span class="w"> </span>variable<span class="w"> </span><span class="nb">set</span><span class="w"> </span>EKS_CLUSTER<span class="w"> </span>-b<span class="w"> </span>eks-store<span class="w"> </span>-R<span class="w"> </span><span class="s2">"&lt;owner&gt;/</span><span class="nv">$r</span><span class="s2">"</span>
-<a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a><span class="w">  </span>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>AWS_ROLE_ARN<span class="w"> </span>-b<span class="w"> </span><span class="s2">"arn:aws:iam::</span><span class="nv">$ACCOUNT</span><span class="s2">:role/github-actions-store"</span><span class="w"> </span>-R<span class="w"> </span><span class="s2">"&lt;owner&gt;/</span><span class="nv">$r</span><span class="s2">"</span>
-<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a><span class="k">done</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="s1">               "StringLike":{"token.actions.githubusercontent.com:sub":["repo:&lt;owner&gt;/*-service:ref:refs/heads/main",</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="s1">                                                                      "repo:&lt;main-owner&gt;/Projeto-PMA:ref:refs/heads/main"]}}}]}'</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>aws<span class="w"> </span>iam<span class="w"> </span>attach-role-policy<span class="w"> </span>--role-name<span class="w"> </span>github-actions-store<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">  </span>--policy-arn<span class="w"> </span>arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>aws<span class="w"> </span>iam<span class="w"> </span>put-role-policy<span class="w"> </span>--role-name<span class="w"> </span>github-actions-store<span class="w"> </span>--policy-name<span class="w"> </span>eks-describe<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="w">  </span>--policy-document<span class="w"> </span><span class="s1">'{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"eks:DescribeCluster","Resource":"*"}]}'</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>aws<span class="w"> </span>eks<span class="w"> </span>create-access-entry<span class="w"> </span>--cluster-name<span class="w"> </span>eks-store<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="w">  </span>--principal-arn<span class="w"> </span><span class="s2">"arn:aws:iam::</span><span class="nv">$ACCOUNT</span><span class="s2">:role/github-actions-store"</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>aws<span class="w"> </span>eks<span class="w"> </span>associate-access-policy<span class="w"> </span>--cluster-name<span class="w"> </span>eks-store<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="w">  </span>--principal-arn<span class="w"> </span><span class="s2">"arn:aws:iam::</span><span class="nv">$ACCOUNT</span><span class="s2">:role/github-actions-store"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="w">  </span>--policy-arn<span class="w"> </span>arn:aws:eks::aws:cluster-access-policy/AmazonEKSEditPolicy<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="w">  </span>--access-scope<span class="w"> </span><span class="nv">type</span><span class="o">=</span>namespace,namespaces<span class="o">=</span>default
+<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>
+<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="c1"># o exchange-py (Python) mora no repositório principal: o workflow dele lê as variáveis de lá</span>
+<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="k">for</span><span class="w"> </span>r<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">"&lt;owner&gt;/account-service"</span><span class="w"> </span><span class="s2">"&lt;owner&gt;/auth-service"</span><span class="w"> </span><span class="s2">"&lt;owner&gt;/gateway-service"</span><span class="w"> </span><span class="s2">"&lt;main-owner&gt;/Projeto-PMA"</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a><span class="w">  </span>gh<span class="w"> </span>variable<span class="w"> </span><span class="nb">set</span><span class="w"> </span>AWS_ECR<span class="w"> </span>-b<span class="w"> </span><span class="nb">true</span><span class="w"> </span>-R<span class="w"> </span><span class="s2">"</span><span class="nv">$r</span><span class="s2">"</span>
+<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a><span class="w">  </span>gh<span class="w"> </span>variable<span class="w"> </span><span class="nb">set</span><span class="w"> </span>EKS_CLUSTER<span class="w"> </span>-b<span class="w"> </span>eks-store<span class="w"> </span>-R<span class="w"> </span><span class="s2">"</span><span class="nv">$r</span><span class="s2">"</span>
+<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="w">  </span>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>AWS_ROLE_ARN<span class="w"> </span>-b<span class="w"> </span><span class="s2">"arn:aws:iam::</span><span class="nv">$ACCOUNT</span><span class="s2">:role/github-actions-store"</span><span class="w"> </span>-R<span class="w"> </span><span class="s2">"</span><span class="nv">$r</span><span class="s2">"</span>
+<a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a><span class="k">done</span>
 </code></pre></div>
 <p>O ARN vai como <strong>secret</strong> (mascarado nos logs) e o workflow usa <code>mask-aws-account-id: true</code>, então o
 ID da conta não aparece nos logs públicos. Teste: um commit em <code>main</code> de qualquer serviço →
@@ -1586,6 +1592,10 @@ teardown (o script já faz isso).</p>
     
     
       <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
       
     
   </body>

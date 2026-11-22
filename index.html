@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot no EKS">
+        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot e FastAPI no EKS">
       
       
         <meta name="author" content="Enzo Canavero e Miguel Damásio">
@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -955,9 +955,10 @@
 <li><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5 2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5"/></svg></span> <strong>IA:</strong> feito com Claude Code — ver <a href="uso-de-ia/">Uso de IA</a></li>
 </ul>
 </div>
-<p>Plataforma de microsserviços <strong>Spring Boot 4.1 / Java 25</strong> para uma loja (compra e venda de
-produtos), com <strong>API Gateway</strong> (Spring Cloud Gateway), <strong>autenticação JWT</strong>, <strong>gestão de contas</strong>
-(PostgreSQL) e <strong>câmbio de moedas</strong> (API de terceiros), empacotada em Docker, orquestrada no
+<p>Plataforma de microsserviços <strong>Spring Boot 4.1 / Java 25</strong> e <strong>Python 3.12 / FastAPI</strong> para uma
+loja (compra e venda de produtos), com <strong>API Gateway</strong> (Spring Cloud Gateway), <strong>autenticação JWT</strong>,
+<strong>gestão de contas</strong> (PostgreSQL) e <strong>câmbio de moedas</strong> (FastAPI sobre a PTAX do Banco Central,
+o serviço do BACEN da disciplina), empacotada em Docker, orquestrada no
 <strong>Kubernetes (Amazon EKS)</strong>, com <strong>CI/CD no GitHub Actions</strong>, <strong>bottlenecks</strong> implementados
 (cache Redis, circuit breaker/retry, rate limiting, observabilidade, varredura de
 vulnerabilidades, autoscaling), <strong>teste de carga com HPA</strong> e <strong>análise de custos</strong>.</p>
@@ -967,14 +968,13 @@ vulnerabilidades, autoscaling), <strong>teste de carga com HPA</strong> e <stron
     subgraph eks [Kubernetes — trusted layer]
         gw[gateway] --&gt;|/auth/**| auth
         gw --&gt;|/accounts/**| account
-        gw --&gt;|/exchanges/**| exchange
+        gw --&gt;|"/exchange/** e /exchanges/**"| exchange["exchange&lt;br/&gt;FastAPI · cache em memória"]
         auth --&gt;|Feign| account
         account --&gt; db[(PostgreSQL)]
         account -.cache.-&gt; redis[(Redis)]
-        exchange -.cache.-&gt; redis
         gw -.rate limit.-&gt; redis
     end
-    exchange --&gt;|HTTPS| api[[AwesomeAPI&lt;br/&gt;cotações]]</code></pre>
+    exchange --&gt;|HTTPS| api[[BACEN PTAX&lt;br/&gt;cotações]]</code></pre>
 <h2 id="entregas">Entregas</h2>
 <ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Microsserviços <strong>Gateway</strong>, <strong>Auth</strong>, <strong>Account</strong>, <strong>Exchange</strong> (+ módulos de interface) — <a href="projeto/">Projeto</a></li>
@@ -986,13 +986,15 @@ vulnerabilidades, autoscaling), <strong>teste de carga com HPA</strong> e <stron
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Custos, PaaS e SLA</strong> (us-east-2, preços da AWS Price List) — <a href="projeto/custos/">Custos</a></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Apresentação (slides) e roteiro do vídeo de 1–2 min — <a href="projeto/apresentacao/">Apresentação</a></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Execução real no EKS</strong> (15/11/2026): cluster <code>eks-store</code> 1.37, RDS PostgreSQL, imagens no ECR, ELB público, HPA do gateway 1 → 10 réplicas; depois reduzido ao mínimo (2 nós <strong>Spot</strong>, 1 NAT, Postgres no cluster, ECR com lifecycle: US$ 0,34 → <strong>0,21/h</strong>) — <a href="projeto/eks/#deploy-real-no-eks-15112026">AWS e EKS</a>, <a href="projeto/custos/#otimizacoes-aplicadas">Custos</a>, <a href="projeto/load-testing/#resultado-no-eks">Teste de carga</a></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> API key da AwesomeAPI no EKS (a API recusa IPs da AWS sem chave): Secret <code>exchange-secrets</code>, smoke test pelo ELB <strong>14/14</strong> — <a href="projeto/eks/#deploy-real-no-eks-15112026">AWS e EKS</a></li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>E2E no CI</strong> hermético (stub da AwesomeAPI), smoke test 14/14 a cada push — <a href="projeto/cicd/#e2e-hermetico">CI/CD</a></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> Câmbio pelo PTAX do BACEN (público, sem API key): a AwesomeAPI recusava os IPs da AWS sem chave (com a chave, smoke test pelo ELB <strong>14/14</strong>); trocamos após o aviso do professor — <a href="projeto/exchange/">Exchange</a> — <a href="projeto/eks/#deploy-real-no-eks-15112026">AWS e EKS</a></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Exchange em Python/FastAPI</strong> (como pede o enunciado): o serviço do BACEN da disciplina em <code>api/exchange-py</code>, com Dockerfile uv, 37 testes, métricas no Grafana e falha rápida medida (10 requisições com a PTAX lenta: ~3 s contra ~30 s do original); smoke test <strong>18/18</strong> com a PTAX real — <a href="projeto/exchange/">Exchange</a></li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>E2E no CI</strong> hermético (stub da PTAX do BACEN), smoke test a cada push: 14 verificações até 21/11 e <strong>18</strong> com o exchange-py (7 do câmbio), 18/18 também com a PTAX real — <a href="projeto/cicd/#e2e-hermetico">CI/CD</a></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Vídeo do teste de carga com HPA</strong> (gateway 1 → 10 réplicas e volta a 1) — <a href="projeto/load-testing/#video-do-teste-de-carga">Teste de carga</a></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Apresentação</strong> (slides) e <strong>vídeo de 1 min 51 s</strong> narrado — <a href="projeto/apresentacao/">Apresentação</a></li>
 </ul>
 <h2 id="repositorios">Repositórios</h2>
-<p>O repositório principal agrega os serviços como <strong>submódulos Git</strong> em <code>api/</code>, como no hands-on 0:</p>
+<p>O repositório principal agrega os serviços Java como <strong>submódulos Git</strong> em <code>api/</code>, como no
+hands-on 0; o Exchange em Python fica numa pasta do próprio repositório principal (<code>api/exchange-py</code>):</p>
 <table>
 <thead>
 <tr>
@@ -1038,13 +1040,18 @@ vulnerabilidades, autoscaling), <strong>teste de carga com HPA</strong> e <stron
 <td><code>api/account-service</code></td>
 </tr>
 <tr>
+<td><a href="https://github.com/EuMiguelll/Projeto-PMA/tree/main/api/exchange-py"><code>Projeto-PMA/api/exchange-py</code></a></td>
+<td><strong>Exchange</strong> em Python/FastAPI (serviço do BACEN da disciplina)</td>
+<td><code>api/exchange-py</code></td>
+</tr>
+<tr>
 <td><a href="https://github.com/canavero/exchange"><code>exchange</code></a></td>
-<td>interface do Exchange (Feign + DTOs)</td>
+<td>versão anterior (Java): interface do Exchange (Feign + DTOs)</td>
 <td><code>api/exchange</code></td>
 </tr>
 <tr>
 <td><a href="https://github.com/canavero/exchange-service"><code>exchange-service</code></a></td>
-<td>cotações de câmbio</td>
+<td>versão anterior (Java) do Exchange, fora do gateway</td>
 <td><code>api/exchange-service</code></td>
 </tr>
 </tbody>
@@ -1118,6 +1125,10 @@ vulnerabilidades, autoscaling), <strong>teste de carga com HPA</strong> e <stron
     
     
       <script src="assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
       
     
   </body>

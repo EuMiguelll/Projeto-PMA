@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot no EKS">
+        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot e FastAPI no EKS">
       
       
         <meta name="author" content="Enzo Canavero e Miguel Damásio">
@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -1200,7 +1200,8 @@ comando <code>watch</code>.)</p>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># local (docker compose): -e BASE_URL=http://host.docker.internal:8080 -e VUS=20 -e RAMP=20s -e HOLD=1m</span>
 </code></pre></div>
 <p>Cenários: <code>info</code> (rampa de VUs no <code>/info</code>, alvo do HPA) e <code>user_flow</code> (login → <code>/auth/me</code> →
-<code>/exchanges/USD/BRL</code>, que exercita JWT, cache Redis e o rate limiting — <code>429</code> é esperado).
+<code>/exchanges/USD/BRL</code>, que exercita JWT, o cache do exchange e o rate limiting — <code>429</code> é esperado;
+com o cache, a carga inteira vira poucas chamadas à PTAX: não faça teste de carga direto no BCB).
 O resumo final mostra <code>http_reqs</code>, latência p(95) e os <em>checks</em>.</p>
 <h2 id="roteiro-de-gravacao-1-min-de-tela">Roteiro de gravação (≈ 1 min de tela)</h2>
 <p>Tempos medidos no EKS (2 × <code>t3.medium</code>) em 15/11/2026:</p>
@@ -1531,7 +1532,7 @@ mas pelo DNS público do ELB: as requisições saem pelo NAT e entram pelo Class
 </tr>
 <tr>
 <td>Fluxo autenticado</td>
-<td>login 100 % · <code>/auth/me</code> 98 % (2 de 180 falharam no pico) · câmbio 0 % (AwesomeAPI devolve 429 para a AWS, ver <a href="../eks/#deploy-real-no-eks-15112026">AWS e EKS</a>)</td>
+<td>login 100 % · <code>/auth/me</code> 98 % (2 de 180 falharam no pico) · câmbio 0 % (a AwesomeAPI devolvia 429 para a AWS, ver <a href="../eks/#deploy-real-no-eks-15112026">AWS e EKS</a>; depois trocamos para o PTAX do BACEN)</td>
 </tr>
 <tr>
 <td>HPA do gateway</td>
@@ -1837,6 +1838,10 @@ acontece sozinha após a janela padrão de 5 min.</p>
     
     
       <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
       
     
   </body>

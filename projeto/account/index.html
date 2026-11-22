@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot no EKS">
+        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot e FastAPI no EKS">
       
       
         <meta name="author" content="Enzo Canavero e Miguel Damásio">
@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -1232,7 +1232,7 @@ e-mail duplicado (409 em vez de 500 vindo da constraint <code>UNIQUE</code>).</p
 </div>
 </div>
 </div>
-<p><strong>Bottleneck:</strong> cache Redis em <code>findById</code> — ver <a href="../bottlenecks/#1-cache-redis-account-e-exchange">Bottlenecks</a>.</p>
+<p><strong>Bottleneck:</strong> cache Redis em <code>findById</code> — ver <a href="../bottlenecks/#1-cache-account-e-exchange">Bottlenecks</a>.</p>
 <h2 id="testes">Testes</h2>
 <p><code>AccountServiceTest</code> (JUnit 5 + Mockito, sem banco): senha curta → 400; e-mail duplicado → 409;
 só o hash é salvo; credenciais erradas → 401.</p>
@@ -1297,6 +1297,10 @@ só o hash é salvo; credenciais erradas → 401.</p>
     
     
       <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
       
     
   </body>

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot no EKS">
+        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot e FastAPI no EKS">
       
       
         <meta name="author" content="Enzo Canavero e Miguel Damásio">
@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -983,13 +983,13 @@ foi feito e onde está a evidência.</p>
 <tr>
 <td><strong>Exchange</strong></td>
 <td style="text-align: right;">5 %</td>
-<td>cotações da AwesomeAPI com cache, retry e circuit breaker; <code>id-account</code> vindo do token</td>
-<td><a href="../projeto/exchange/">Exchange</a> · <a href="https://github.com/canavero/exchange"><code>exchange</code></a> + <a href="https://github.com/canavero/exchange-service"><code>exchange-service</code></a></td>
+<td>em <strong>Python/FastAPI</strong>, como pede o enunciado: o serviço do BACEN da disciplina sobre a PTAX (direto nos endpoints OData do BCB), com cotação cruzada via BRL, cache em memória com lock por moeda, cotação velha (<em>stale</em>) e falha rápida quando a PTAX cai, <code>422</code>/<code>404</code>/<code>502</code> claros e métricas; <code>id-account</code> vindo do token; 37 testes pytest e smoke test 18/18 com a PTAX real</td>
+<td><a href="../projeto/exchange/">Exchange</a> · <a href="https://github.com/EuMiguelll/Projeto-PMA/tree/main/api/exchange-py"><code>api/exchange-py</code></a> · <a href="https://github.com/EuMiguelll/Projeto-PMA/blob/main/docs/evidencias/exchange-py-ptax.txt">evidência</a></td>
 </tr>
 <tr>
 <td><strong>Bottlenecks</strong></td>
 <td style="text-align: right;">20 %</td>
-<td><strong>6</strong> implementados e medidos: cache Redis, circuit breaker + retry, rate limiting, observabilidade (Prometheus + Grafana), Trivy no CI, HPA; <strong>2 em destaque por integrante</strong></td>
+<td><strong>6</strong> implementados e medidos: cache (Redis no account, memória no exchange), circuit breaker + retry (auth → account) e <em>stale</em> + falha rápida (exchange → BACEN), rate limiting, observabilidade (Prometheus + Grafana), Trivy no CI, HPA; <strong>2 em destaque por integrante</strong></td>
 <td><a href="../projeto/bottlenecks/">Bottlenecks</a> · dashboard no Grafana · vídeo</td>
 </tr>
 <tr>
@@ -1007,7 +1007,7 @@ foi feito e onde está a evidência.</p>
 <tr>
 <td><strong>CI/CD</strong> (GitHub Actions)</td>
 <td style="text-align: right;">10 %</td>
-<td>pipeline por serviço (build + testes → imagem multi-arch + Trivy → deploy no EKS por OIDC), E2E da plataforma (compose + smoke test) e publicação das docs</td>
+<td>pipeline por serviço (build + testes → imagem multi-arch + Trivy → deploy no EKS por OIDC), incluindo o <code>exchange-py</code> (uv + pytest + ruff, contêiner testado), E2E da plataforma (compose + smoke test) e publicação das docs</td>
 <td><a href="../projeto/cicd/">CI/CD</a> · execuções verdes no GitHub Actions</td>
 </tr>
 <tr>
@@ -1053,7 +1053,7 @@ foi feito e onde está a evidência.</p>
 </tr>
 <tr>
 <td>Código do projeto</td>
-<td><a href="https://github.com/EuMiguelll/Projeto-PMA"><code>Projeto-PMA</code></a> com os 7 submódulos em <code>api/</code></td>
+<td><a href="https://github.com/EuMiguelll/Projeto-PMA"><code>Projeto-PMA</code></a> com os 7 submódulos em <code>api/</code> e o Exchange em Python em <code>api/exchange-py/</code></td>
 </tr>
 <tr>
 <td>Links de todos os repositórios</td>
@@ -1140,6 +1140,10 @@ foi gravado num Kubernetes local (kind) com os mesmos manifests, sem gastar AWS.
     
     
       <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
       
     
   </body>

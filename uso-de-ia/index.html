@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot no EKS">
+        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot e FastAPI no EKS">
       
       
         <meta name="author" content="Enzo Canavero e Miguel Damásio">
@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -998,7 +998,7 @@ feito com ela e o que foi feito pelos integrantes. Neste projeto, a divisão foi
 </tr>
 <tr>
 <td><strong>Divisão de tarefas</strong></td>
-<td>cada integrante responde por 2 bottlenecks: <strong>Miguel</strong> por rate limiting e observabilidade, <strong>Enzo</strong> por cache e circuit breaker (<a href="../projeto/bottlenecks/#destaques-por-integrante">destaques</a>). <strong>Enzo</strong> conduziu o deploy real no EKS e a otimização de custos; <strong>Miguel</strong> conduziu a entrega final: E2E do CI, vídeos, apresentação, checklist da rubrica e revisão da documentação</td>
+<td>cada integrante responde por 2 bottlenecks: <strong>Miguel</strong> por rate limiting e observabilidade, <strong>Enzo</strong> por cache e circuit breaker (<a href="../projeto/bottlenecks/#destaques-por-integrante">destaques</a>). <strong>Enzo</strong> conduziu o deploy real no EKS e a otimização de custos; <strong>Miguel</strong> conduziu a entrega final: E2E do CI, vídeos, apresentação, checklist da rubrica, revisão da documentação e a troca do Exchange para o serviço Python do BACEN</td>
 </tr>
 <tr>
 <td><strong>Gestão dos agentes</strong></td>
@@ -1046,13 +1046,18 @@ feito com ela e o que foi feito pelos integrantes. Neste projeto, a divisão foi
 </tr>
 <tr>
 <td>CI/CD</td>
-<td>workflows do GitHub Actions; stub da AwesomeAPI para o E2E</td>
+<td>workflows do GitHub Actions; stub do provedor de câmbio para o E2E</td>
 <td><code>actionlint</code>; execuções verdes no GitHub Actions e E2E reproduzido localmente (14/14)</td>
 </tr>
 <tr>
 <td>Custos</td>
 <td>consultou a AWS Price List e montou os cenários</td>
 <td>valores conferidos nos arquivos oficiais de preço e no AWS Pricing Calculator</td>
+</tr>
+<tr>
+<td>Exchange em Python (22/11)</td>
+<td>adaptou o serviço FastAPI da página do BACEN (<code>api/exchange-py</code>), escreveu os testes com a PTAX simulada, o <code>Dockerfile</code>, o manifest, o workflow e a integração no gateway/compose</td>
+<td>37 testes + 2 contra a PTAX real; mutações no código (fórmula invertida, regex sem âncora, sem lock…) derrubam a suíte; smoke test 18/18 pelo gateway com a PTAX real; comparação medida com o serviço original</td>
 </tr>
 <tr>
 <td>Documentação</td>
@@ -1080,7 +1085,16 @@ GitHub sem confirmar a conta, e poupar o computador (builds um de cada vez).</p>
 <li>no EKS, a AwesomeAPI devolveu <code>429 QuotaExceeded</code> para os IPs dos NAT Gateways (do Mac, 200):
   só o deploy real mostrou que o exchange precisa de API key na nuvem;</li>
 <li>o E2E do GitHub Actions falhava pelo mesmo <code>429</code>, por um motivo externo ao código: trocamos a
-  API real por um stub no CI.</li>
+  API real por um stub no CI;</li>
+<li>com o aviso do professor (16/11) de que APIs gratuitas recusam IPs da AWS, trocamos a
+  AwesomeAPI pelo PTAX do BACEN, que dispensa chave (o stub do CI passou a imitar o PTAX);</li>
+<li>o enunciado pede o Exchange em Python, e a versão Java não seguia isso: em 22/11 ele passou a
+  ser o serviço FastAPI do BACEN da disciplina. Na adaptação, um teste mostrou que o <code>pattern</code> do
+  Pydantic procura o padrão em qualquer parte do texto (<code>USDT</code> passava por <code>[A-Za-z]{3}</code>) e o
+  regex ganhou <code>^…$</code>;</li>
+<li>a primeira simulação de "PTAX lenta" usava um IP que falhava na hora, e a evidência não mostrava
+  o que dizia; trocamos por um servidor que demora 10 s de verdade e <strong>medimos</strong> o serviço
+  original lado a lado (fila de 3 a 30 s, e a exceção interna no corpo do 502) em vez de supor.</li>
 </ul>
 <h2 id="responsabilidade">Responsabilidade</h2>
 <p>Usar IA não tira de nós a responsabilidade de entender e defender o projeto. Os dois sabem
@@ -1148,6 +1162,10 @@ defender as escolhas de custo.</p>
     
     
       <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
       
     
   </body>

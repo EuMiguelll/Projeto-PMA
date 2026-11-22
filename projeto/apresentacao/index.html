@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot no EKS">
+        <meta name="description" content="Projeto final de Plataformas (Insper) — microsserviços Spring Boot e FastAPI no EKS">
       
       
         <meta name="author" content="Enzo Canavero e Miguel Damásio">
@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -1114,6 +1114,13 @@ local (kind) com os mesmos manifests e o mesmo <code>deploy.sh</code> do EKS, pa
 gravar. Os terminais foram gravados com o <a href="https://github.com/charmbracelet/vhs">VHS</a> e o Grafana
 com o Playwright; a montagem foi feita com o <code>ffmpeg</code>.</p>
 <h2 id="slides">Slides</h2>
+<div class="admonition note">
+<p class="admonition-title">Depois da gravação</p>
+<p>Os slides e os vídeos são de 15–16/11/2026, quando o Exchange ainda era o serviço Java (com a
+AwesomeAPI e, depois, a PTAX). Em 22/11 ele passou a ser o serviço <strong>Python/FastAPI</strong> do BACEN
+da disciplina, como pede o enunciado: o fluxo mostrado (gateway → JWT → câmbio) é o mesmo, e
+os detalhes estão em <a href="../exchange/">Exchange</a>.</p>
+</div>
 <div class="grid">
 <p><img alt="Capa" src="../../assets/slides/s1-title.png" />
 <img alt="Arquitetura" src="../../assets/slides/s2-arch.png" />
@@ -1188,6 +1195,10 @@ scripts de gravação e montagem dos vídeos: <a href="https://github.com/EuMigu
     
     
       <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
       
     
   </body>
