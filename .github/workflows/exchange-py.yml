@@ -63,7 +63,7 @@ jobs:
           test "$(code -H 'id-account: ci' localhost:8000/exchange/USD/BRL)" = 502  # PTAX fora e sem cache
           test "$(code localhost:8000/exchange/USD/BRL)" = 422                      # sem id-account
           test "$(code -H 'id-account: ci' localhost:8000/exchange/US/BRL)" = 422   # código inválido
-          curl -fsS localhost:8000/metrics | grep -q '^ptax_requests_total{outcome="error"}'
+          grep -q '^ptax_requests_total{outcome="error"}' <<<"$(curl -fsS localhost:8000/metrics)"
       - name: Logs
         if: failure()
         run: docker logs exchange
