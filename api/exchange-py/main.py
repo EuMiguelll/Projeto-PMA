@@ -11,7 +11,9 @@ X-Cache (miss | hit | stale), GET /exchange/currencies e GET /health. O que mudo
 - as duas moedas do par são buscadas em paralelo, e o boletim mais recente é escolhido pela
   data (não pela posição na resposta);
 - o 502 não expõe detalhes internos (eles vão para o log);
-- métricas Prometheus em /metrics (mesmos nomes de métricas HTTP dos serviços Spring).
+- métricas Prometheus em /metrics (mesmos nomes de métricas HTTP dos serviços Spring);
+- GET /exchange/health-check (e /exchanges/health-check), o health-check que o enunciado do
+  projeto pede a todo microsserviço.
 """
 
 import asyncio
@@ -186,6 +188,20 @@ class Rate(BaseModel):
 class CurrencyOut(BaseModel):
     symbol: str
     name: str
+
+
+# health-check do enunciado do projeto ("todo microsserviço expõe GET /<serviço>/health-check"), no
+# padrão dos serviços Java: 200 sem corpo, sem id-account e sem tocar na PTAX. Fica antes das rotas
+# /exchange/{source}/{target}; o /health da página do BACEN continua (HEALTHCHECK e probes)
+@app.get(
+    "/exchange/health-check",
+    response_class=Response,
+    responses={200: {"description": "serviço no ar (sem corpo)"}},
+)
+@app.get("/exchanges/health-check", response_class=Response, include_in_schema=False)
+async def health_check():
+    """Health-check do serviço: 200 sem corpo, sem dados internos."""
+    return Response(status_code=200)
 
 
 @app.get(

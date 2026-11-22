@@ -226,7 +226,7 @@ async def _gather(c: httpx.AsyncClient, n: int) -> list[httpx.Response]:
     return await asyncio.gather(*(c.get("/exchange/USD/EUR", headers={"id-account": ACCOUNT}) for _ in range(n)))
 
 
-# --- moedas, health e métricas --------------------------------------------------------------
+# --- moedas, health, health-check e métricas ------------------------------------------------
 
 
 def test_currencies_lists_what_ptax_quotes_and_is_cached(client, ptax):
@@ -249,7 +249,37 @@ def test_currencies_without_ptax_and_cache_is_502(client, ptax):
 
 
 def test_health(client):
-    assert client.get("/health").json() == {"status": "ok"}
+    assert client.get("/health").json() == {"status": "ok"}  # contrato da página do BACEN
+
+
+@pytest.mark.parametrize("path", ["/exchange/health-check", "/exchanges/health-check"])
+def test_health_check_is_200_without_body_and_without_id_account(client, ptax, path):
+    del client.headers["id-account"]  # público no serviço: não exige o header do gateway
+
+    r = client.get(path)
+
+    assert r.status_code == 200
+    assert r.content == b""  # nada de cotação, cache, versão ou host
+    assert ptax.calls == []
+
+
+@pytest.mark.parametrize("path", ["/exchange/health-check", "/exchanges/health-check"])
+def test_health_check_is_not_captured_as_a_currency_pair(client, path):
+    # pelo gateway chega com id-account: mesmo assim é o health-check, não /{from}/{to}
+    r = client.get(path)
+
+    assert r.status_code == 200 and r.content == b""
+    assert "detail" not in r.text  # nem 404 de moeda nem 422 de código inválido
+    # a rota casada é a do health-check (template no rótulo uri das métricas HTTP)
+    assert f'uri="{path}"' in client.get("/metrics").text
+
+
+def test_health_check_does_not_depend_on_ptax(client, ptax):
+    ptax.failure = httpx.ConnectTimeout("timeout")
+
+    assert client.get("/exchange/USD/BRL").status_code == 502
+    assert client.get("/exchange/health-check").status_code == 200
+    assert client.get("/health").status_code == 200
 
 
 def test_metrics_count_ptax_calls_and_x_cache(client):
@@ -279,3 +309,5 @@ def test_openapi_documents_the_contract(client):
 
     assert "/exchange/{source}/{target}" in spec["paths"]
     assert set(spec["components"]["schemas"]["Rate"]["properties"]) == {"sell", "buy", "date", "id-account"}
+    assert "/exchange/health-check" in spec["paths"]
+    assert "/exchanges/health-check" not in spec["paths"]  # sinônimo do enunciado, fora do Swagger
