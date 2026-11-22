@@ -82,7 +82,7 @@ SMOKE TEST OK
 ```
 
 O mesmo fluxo roda no workflow **E2E** do GitHub Actions, com o stub da PTAX no lugar do BCB
-([CI/CD](cicd.md#e2e-hermetico)). As 6 verificações do exchange cobrem as duas rotas
+([CI/CD](cicd.md#e2e-hermetico)). As 7 verificações do exchange cobrem as duas rotas
 (`/exchanges/**` do enunciado e `/exchange/**` da página do BACEN), o `id-account` vindo do
 token, o cache (`X-Cache: hit`) e os erros `401`, `404` e `422`.
 

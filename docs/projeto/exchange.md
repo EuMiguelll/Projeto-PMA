@@ -47,7 +47,7 @@ x-cache: hit
 | Situação | Código | Corpo |
 |----------|-------:|-------|
 | sem o cookie JWT (ou token inválido) | `401` | barrado no gateway, antes do exchange |
-| código fora do formato ISO 4217 (`US`, `USDT`, `U$D`, `U'D`) | `422` | erro de validação do FastAPI, sem chamar a PTAX |
+| código fora do formato ISO 4217 (`US`, `USDT`, `US$`, `U'D`) | `422` | erro de validação do FastAPI, sem chamar a PTAX |
 | sem o header `id-account` (só chamando o serviço direto) | `422` | o gateway sempre injeta o header a partir do token |
 | moeda que a PTAX não cota (`XYZ`) | `404` | `{"detail": "Unknown currency: XYZ"}` |
 | PTAX fora do ar e nenhuma cotação guardada | `502` | `{"detail": "PTAX unavailable and nothing cached for USD"}` |
@@ -239,7 +239,7 @@ sem o lock por moeda, com o boletim pela posição, com uma janela de 1 dia, sem
 cache de 404, a suíte falha (de 1 a 13 testes em cada caso). No CI, o workflow
 [`exchange-py`](cicd.md#exchange-py-python) roda o pytest, o ruff, constrói a imagem e testa o
 contêiner; o E2E sobe a plataforma com um stub da PTAX e roda o smoke test (18 verificações,
-6 delas do exchange).
+7 delas do exchange).
 
 ## Evidências
 

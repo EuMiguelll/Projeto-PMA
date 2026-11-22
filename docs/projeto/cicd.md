@@ -113,7 +113,7 @@ mínimo de AWS.
 ### E2E hermético
 
 O E2E sobe a plataforma inteira com `docker compose` e roda o smoke test pelo gateway (18
-verificações, 6 do exchange). No CI o `exchange-py` fala com um **stub** da PTAX do BACEN
+verificações, 7 do exchange). No CI o `exchange-py` fala com um **stub** da PTAX do BACEN
 (nginx com respostas fixas, `setup/provider-stub/default.conf`) que responde às mesmas URLs
 OData que o serviço chama: as cotações de `USD` e `EUR` em `CotacaoMoedaPeriodo`, uma lista
 vazia para moedas desconhecidas (o exchange responde `404`), como a API real, e a lista de
