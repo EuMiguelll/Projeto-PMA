@@ -325,6 +325,13 @@ ExchangeMetrics up
 GatewayMetrics up
 ```
 
+![Dashboard Store — Bottlenecks com o exchange-py](../evidencias/grafana-exchange-py.png)
+
+*22/11/2026, compose local com o exchange-py e a PTAX real: o `ExchangeMetrics` entra nos
+painéis de req/s, latência e memória sem mudar nenhuma consulta, e o painel de baixo mostra
+~720 respostas `X-Cache: hit` por minuto (tráfego de 03:45–03:50 UTC pelo gateway) com a linha
+de chamadas à PTAX colada no zero.*
+
 Grafana: <http://localhost:3000> (admin/admin) → *Dashboards → Store → Store — Bottlenecks*.
 No Kubernetes, as **probes** de liveness/readiness usam os health groups do Actuator, e o
 `metrics-server` alimenta o HPA.
