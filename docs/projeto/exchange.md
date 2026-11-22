@@ -139,7 +139,7 @@ mudanças corrigem situações que medimos ou que os testes mostraram:
 | Moeda desconhecida | chama a PTAX a cada requisição | o `404` também fica em cache por 5 min |
 | As duas moedas do par | uma depois da outra | em paralelo (`asyncio.gather`) |
 | Boletim mais recente | o último da lista | o de maior `dataHoraCotacao` (não depende da ordem) |
-| Data de hoje | do contêiner (UTC: de 21 h a 0 h, já é amanhã) | a de Brasília |
+| Data de hoje | a do contêiner, em UTC (das 21 h à meia-noite de Brasília, já é o dia seguinte) | a de Brasília |
 | `/exchange/currencies` | chama a PTAX toda vez | mesmo cache e mesmo stale das cotações |
 | Observabilidade | — | `/metrics` com os nomes do Micrometer: o exchange entra no dashboard do Grafana |
 | Contêiner | (tarefa do aluno) | `python:3.12-slim` + uv, `uv sync --frozen --no-dev`, UID 10001, `HEALTHCHECK`, roda com o sistema de arquivos só leitura |
@@ -260,8 +260,8 @@ contêiner; o E2E sobe a plataforma com um stub da PTAX e roda o smoke test (18 
 Até 21/11 o Exchange era um serviço **Spring Boot** ([`exchange`](https://github.com/canavero/exchange)
 \+ [`exchange-service`](https://github.com/canavero/exchange-service), submódulos em `api/`),
 no mesmo padrão dos outros três: `RestClient` para o provedor, cache Redis de 60 s, retry e
-circuit breaker do Resilience4j. Começou na AwesomeAPI e passou para a PTAX em 16/11; foi com
-ele que o deploy no EKS rodou ([evidências](eks.md#deploy-real-no-eks-15112026)). Os dois
+circuit breaker do Resilience4j. Foi ele que rodou no deploy no EKS, ainda com a AwesomeAPI
+([evidências](eks.md#deploy-real-no-eks-15112026)), e ele passou para a PTAX em 16/11, depois do teardown. Os dois
 submódulos continuam no repositório e o `./scripts/build.sh` ainda os compila e testa, mas eles
 saíram do `compose.yaml`, do Kubernetes e das rotas do gateway: o Exchange da plataforma é o
 `exchange-py`, que segue o enunciado (Python) e a página do BACEN da disciplina.
