@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Teste ponta a ponta pelo gateway: registro -> login -> rotas seguras -> exchange (18 verificações).
+# Teste ponta a ponta pelo gateway: registro -> login -> rotas seguras -> exchange (21 verificações).
 #   ./scripts/smoke-test.sh                      # local (docker compose)
 #   ./scripts/smoke-test.sh http://<elb-dns>:8080 # EKS
 set -uo pipefail
@@ -53,6 +53,11 @@ check "GET /exchange/USD/EUR (cruzada via BRL, sell >= buy)" yes "$(jq -e '.buy 
 check "GET /exchange/USD/EUR sem cookie" 401 "$(code "$BASE/exchange/USD/EUR")"
 check "GET /exchanges/XXX/YYY (moeda desconhecida)" 404 "$(code -b "$COOKIE" "$BASE/exchanges/XXX/YYY")"
 check "GET /exchanges/US/BRL (código inválido)" 422 "$(code -b "$COOKIE" "$BASE/exchanges/US/BRL")"
+# health-check do exchange (enunciado: GET /<serviço>/health-check). Pelo gateway ele passa pelo filtro
+# JWT, como toda rota de serviço: só register, login e logout são abertas
+check "GET /exchange/health-check (com cookie)" 200 "$(code -b "$COOKIE" "$BASE/exchange/health-check")"
+check "GET /exchanges/health-check (com cookie)" 200 "$(code -b "$COOKIE" "$BASE/exchanges/health-check")"
+check "GET /exchange/health-check sem cookie (gateway exige JWT)" 401 "$(code "$BASE/exchange/health-check")"
 
 [[ $FAIL == 0 ]] && echo "SMOKE TEST OK" || echo "SMOKE TEST FALHOU"
 exit $FAIL

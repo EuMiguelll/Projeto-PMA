@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@v7
       - name: docker build (python:3.12-slim + uv sync --frozen --no-dev)
         run: docker build -t exchange-py:ci api/exchange-py
-      - name: Contêiner sobe saudável, sem root, e responde os erros do contrato
+      - name: Contêiner sobe saudável, sem root, health-check e erros do contrato
         run: |
           # PTAX_URL inacessível de propósito: o teste não depende do BCB
           docker run -d --name exchange -p 8000:8000 -e PTAX_URL=http://127.0.0.1:9 exchange-py:ci
@@ -60,6 +60,9 @@ jobs:
           test "$(docker exec exchange id -u)" = 10001
           curl -fsS localhost:8000/health
           code() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
+          test "$(code localhost:8000/exchange/health-check)" = 200                 # health-check, sem id-account
+          test "$(code localhost:8000/exchanges/health-check)" = 200
+          test -z "$(curl -fsS localhost:8000/exchange/health-check)"              # sem corpo
           test "$(code -H 'id-account: ci' localhost:8000/exchange/USD/BRL)" = 502  # PTAX fora e sem cache
           test "$(code localhost:8000/exchange/USD/BRL)" = 422                      # sem id-account
           test "$(code -H 'id-account: ci' localhost:8000/exchange/US/BRL)" = 422   # código inválido
