@@ -90,7 +90,7 @@ sequenceDiagram
     G->>E: GET /exchanges/USD/BRL + header id-account
     E->>E: cotação do USD no cache em memória?
     alt miss (ou vencida)
-        E->>E: PTAX do BCB (lock por moeda; se falhar: stale ou 502)
+        E->>E: PTAX do BCB (lock por moeda, e se falhar: stale ou 502)
         E->>E: guarda por 5 min
     end
     E-->>U: {"sell":5.8889,"buy":5.8883,"date":"2026-11-19 13:04:18","id-account":"..."} + X-Cache

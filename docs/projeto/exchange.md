@@ -82,21 +82,21 @@ O serviço pede à PTAX os boletins de cada moeda **em reais** dos últimos 7 di
 e feriado não têm boletim, e 7 dias sempre contêm um dia útil), fica com o mais recente e
 guarda a cotação em memória por `CACHE_SECONDS` (5 min). Enquanto uma moeda é atualizada, as
 outras requisições da mesma moeda esperam essa atualização em vez de chamar o BCB junto (lock
-por moeda). Cada moeda passa por estes estados:
+por moeda). Para cada moeda do par:
 
 ```mermaid
-stateDiagram-v2
-    direction LR
-    [*] --> fresca: PTAX ok (miss)
-    [*] --> desconhecida: PTAX sem a moeda (404)
-    [*] --> fora: PTAX falhou (502)
-    fresca --> fresca: até 5 min (hit)
-    fresca --> velha: venceu e a PTAX falhou
-    velha --> velha: 30 s sem chamar a PTAX (stale)
-    velha --> fresca: PTAX de volta (miss)
-    fora --> fora: 30 s sem chamar a PTAX (502 imediato)
-    fora --> fresca: PTAX de volta (miss)
-    desconhecida --> desconhecida: até 5 min (404 do cache)
+flowchart TD
+    req([cotação de uma moeda]) --> brl{BRL?}
+    brl -- sim --> one[vale 1,0]
+    brl -- não --> fresh{"no cache e<br/>dentro do prazo?"}
+    fresh -- sim --> cached["responde do cache<br/>hit · stale · 404 · 502"]
+    fresh -- não --> lock["lock da moeda<br/>(quem chega espera)"]
+    lock --> ptax["chama a PTAX<br/>(timeout de 3 s)"]
+    ptax -- respondeu --> saved["guarda por 5 min<br/>X-Cache: miss"]
+    ptax -- moeda não cotada --> nf["guarda o 404<br/>por 5 min"]
+    ptax -- falhou --> old{"há cotação<br/>guardada?"}
+    old -- sim --> stale["serve a velha por 30 s<br/>X-Cache: stale"]
+    old -- não --> down["502 por 30 s, sem<br/>chamar a PTAX de novo"]
 ```
 
 `X-Cache` diz de onde veio a resposta: `miss` (a PTAX foi chamada), `hit` (cotação em memória)
