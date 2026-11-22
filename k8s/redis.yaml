@@ -1,4 +1,4 @@
-# Redis: cache do account/exchange e rate limiting do gateway (alternativa PaaS: ElastiCache)
+# Redis: cache do account e rate limiting do gateway (alternativa PaaS: ElastiCache)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
