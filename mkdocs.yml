@@ -6,6 +6,13 @@ repo_url: https://github.com/EuMiguelll/Projeto-PMA
 repo_name: EuMiguelll/Projeto-PMA
 edit_uri: ""
 
+# com --strict, link ou âncora quebrada (pagina.md#secao) derruba o build
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
 theme:
   name: material
   language: pt-BR
