@@ -1147,7 +1147,7 @@ próprio <code>docker compose</code> (o <code>uv sync --frozen</code> roda no <c
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="go">==&gt; auth-service       Tests run: 4, Failures: 0, Errors: 0   BUILD SUCCESS</span>
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="go">==&gt; exchange-service   Tests run: 3, Failures: 0, Errors: 0   BUILD SUCCESS   # versão anterior (Java)</span>
 <a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="go">==&gt; gateway-service    Tests run: 4, Failures: 0, Errors: 0   BUILD SUCCESS</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="go">==&gt; exchange-py        37 passed, 2 deselected                               # uv + pytest</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="go">==&gt; exchange-py        42 passed, 2 deselected                               # uv + pytest</span>
 </code></pre></div>
 <p>(22/11/2026, JDK Temurin 25 e uv 0.11; os 2 testes <em>deselected</em> são os <code>live</code>, que chamam a PTAX
 real e rodam à parte com <code>uv run pytest -m live</code>.)</p>
@@ -1156,7 +1156,7 @@ memória normal, com prioridade baixa (<code>taskpolicy -b</code>), <code>-T 2</
 container do Maven.</p>
 <h2 id="smoke-test">Smoke test</h2>
 <p><code>scripts/smoke-test.sh [URL]</code> (padrão <code>http://localhost:8080</code>; no EKS, passe o DNS do ELB):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gp">$ </span>./scripts/smoke-test.sh<span class="w">   </span><span class="c1"># 22/11/2026, exchange-py com a PTAX real</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gp">$ </span>./scripts/smoke-test.sh<span class="w">   </span><span class="c1"># 22/11/2026, 20:34 (Brasília), exchange-py com a PTAX real</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="go">✅ GET /health-check (aberto) -&gt; 200</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="go">✅ GET /info (aberto) -&gt; 200</span>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="go">✅ POST /auth/register -&gt; 200</span>
@@ -1165,24 +1165,29 @@ container do Maven.</p>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="go">✅ POST /auth/login devolve cookie JWT -&gt; yes</span>
 <a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="go">✅ GET /accounts sem cookie -&gt; 401</span>
 <a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="go">✅ GET /accounts com token forjado -&gt; 401</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="go">✅ GET /auth/me -&gt; smoke.1795318110@insper.edu.br</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="go">✅ GET /auth/me -&gt; smoke.&lt;ts&gt;@insper.edu.br</span>
 <a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="go">✅ GET /accounts/{id} (1ª vez: banco) -&gt; 200</span>
 <a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="go">✅ GET /accounts/{id} (2ª vez: cache Redis) -&gt; 200</span>
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="go">   exchange: {"sell":5.8889,"buy":5.8883,"date":"2026-11-19 13:04:18","id-account":"03de49c7-21c8-4690-8751-41c7da3ef319"}</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="go">   exchange: {"sell":5.8889,"buy":5.8883,"date":"2026-11-19 13:04:18","id-account":"8c88d0e2-eb1f-45f0-93a1-6e8c75bfa355"}</span>
 <a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="go">✅ GET /exchanges/USD/BRL tem sell/buy -&gt; yes</span>
-<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="go">✅ id-account vem do token (header forjado descartado) -&gt; 03de49c7-21c8-4690-8751-41c7da3ef319</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="go">✅ id-account vem do token (header forjado descartado) -&gt; 8c88d0e2-eb1f-45f0-93a1-6e8c75bfa355</span>
 <a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="go">✅ GET /exchanges/USD/BRL de novo (cache em memória) -&gt; hit</span>
-<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="go">   exchange: {"sell":0.910763,"buy":0.910487,"date":"2026-11-19 13:04:18","id-account":"03de49c7-21c8-4690-8751-41c7da3ef319"}</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="go">   exchange: {"sell":0.910763,"buy":0.910487,"date":"2026-11-19 13:04:18","id-account":"8c88d0e2-eb1f-45f0-93a1-6e8c75bfa355"}</span>
 <a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="go">✅ GET /exchange/USD/EUR (cruzada via BRL, sell &gt;= buy) -&gt; yes</span>
 <a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="go">✅ GET /exchange/USD/EUR sem cookie -&gt; 401</span>
 <a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="go">✅ GET /exchanges/XXX/YYY (moeda desconhecida) -&gt; 404</span>
 <a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="go">✅ GET /exchanges/US/BRL (código inválido) -&gt; 422</span>
-<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="go">SMOKE TEST OK</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="go">✅ GET /exchange/health-check (com cookie) -&gt; 200</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="go">✅ GET /exchanges/health-check (com cookie) -&gt; 200</span>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="go">✅ GET /exchange/health-check sem cookie (gateway exige JWT) -&gt; 401</span>
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="go">SMOKE TEST OK</span>
 </code></pre></div>
 <p>O mesmo fluxo roda no workflow <strong>E2E</strong> do GitHub Actions, com o stub da PTAX no lugar do BCB
-(<a href="../cicd/#e2e-hermetico">CI/CD</a>). As 7 verificações do exchange cobrem as duas rotas
+(<a href="../cicd/#e2e-hermetico">CI/CD</a>). As 10 verificações do exchange cobrem as duas rotas
 (<code>/exchanges/**</code> do enunciado e <code>/exchange/**</code> da página do BACEN), o <code>id-account</code> vindo do
-token, o cache (<code>X-Cache: hit</code>) e os erros <code>401</code>, <code>404</code> e <code>422</code>.</p>
+token, o cache (<code>X-Cache: hit</code>), os erros <code>401</code>, <code>404</code> e <code>422</code> e o health-check
+(<code>/exchange/health-check</code> e <code>/exchanges/health-check</code>: <code>200</code> com o cookie, <code>401</code> sem ele, porque
+o gateway exige login em toda rota roteada).</p>
 <h2 id="testando-a-mao">Testando à mão</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>localhost:8080/auth/register<span class="w"> </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"name":"Antonio do Estudo","email":"acme@insper.edu.br","password":"123@321"}'</span>
@@ -1192,7 +1197,8 @@ token, o cache (<code>X-Cache: hit</code>) e os erros <code>401</code>, <code>40
 <a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>curl<span class="w"> </span>-b<span class="w"> </span>cookies.txt<span class="w"> </span>localhost:8080/exchanges/USD/BRL
 <a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>curl<span class="w"> </span>-i<span class="w"> </span>-b<span class="w"> </span>cookies.txt<span class="w"> </span>localhost:8080/exchange/USD/EUR<span class="w">   </span><span class="c1"># header X-Cache: miss, depois hit</span>
 <a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>curl<span class="w"> </span>-b<span class="w"> </span>cookies.txt<span class="w"> </span>localhost:8080/exchange/currencies
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>curl<span class="w"> </span>-i<span class="w"> </span>localhost:8080/accounts<span class="w">            </span><span class="c1"># 401 sem cookie</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>curl<span class="w"> </span>-i<span class="w"> </span>-b<span class="w"> </span>cookies.txt<span class="w"> </span>localhost:8080/exchange/health-check<span class="w">   </span><span class="c1"># 200 sem corpo (401 sem o cookie)</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>curl<span class="w"> </span>-i<span class="w"> </span>localhost:8080/accounts<span class="w">            </span><span class="c1"># 401 sem cookie</span>
 </code></pre></div>
 
 

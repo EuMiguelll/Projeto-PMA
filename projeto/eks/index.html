@@ -1831,7 +1831,9 @@ conta em tempo de execução (<code>aws sts get-caller-identity</code>).</p>
 <li><strong>Probes</strong>: <code>startupProbe</code> (até 3 min para a JVM subir com pouca CPU), <code>livenessProbe</code> e
   <code>readinessProbe</code> nos health groups do Actuator — o Service só manda tráfego para pods prontos e
   o rolling update não derruba a API. No <code>exchange-py</code> as três usam <code>GET /health</code> (o uvicorn sobe
-  em ~1 s), e a readiness <strong>não</strong> depende da PTAX: com o BCB fora, o pod segue servindo o cache.</li>
+  em ~1 s), a rota que a página do BACEN reserva para o contêiner (o <code>/exchange/health-check</code> do
+  enunciado responde igual, sem depender da PTAX), e a readiness <strong>não</strong> depende da PTAX: com o
+  BCB fora, o pod segue servindo o cache.</li>
 <li><strong>Segurança do pod</strong> (<code>exchange-py</code>): <code>runAsNonRoot</code> (a imagem roda como UID 10001),
   <code>readOnlyRootFilesystem</code>, <code>allowPrivilegeEscalation: false</code>, todas as capabilities removidas e
   seccomp <code>RuntimeDefault</code>. A imagem foi testada no Docker com as mesmas restrições

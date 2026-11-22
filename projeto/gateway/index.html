@@ -1019,6 +1019,10 @@ porta publicada (compose) / <code>Service</code> <code>LoadBalancer</code> (Kube
 </tbody>
 </table>
 <h2 id="como-funciona-a-autorizacao">Como funciona a autorização</h2>
+<p>Os health-checks dos serviços (<code>/accounts/health-check</code>, <code>/auth/health-check</code>,
+<code>/exchange/health-check</code>) são rotas roteadas como as outras: passam pelo filtro e, sem o cookie,
+recebem <code>401</code>. O <code>/health-check</code> do gateway é dele mesmo, não é roteado, e por isso é aberto
+(é o alvo do health check do ALB no <code>k8s/ingress.yaml</code>).</p>
 <pre class="mermaid"><code>flowchart TD
     A[Requisição] --&gt; RL{RequestRateLimiter&lt;br/&gt;tokens no Redis?}
     RL -- não --&gt; R429[429 Too Many Requests]

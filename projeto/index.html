@@ -1079,7 +1079,7 @@ sem módulo de interface (o contrato é o HTTP do enunciado). A versão Java ant
 <td>exchange</td>
 <td><code>api/exchange-py/main.py</code> (FastAPI)</td>
 <td style="text-align: right;">8000</td>
-<td><code>GET /exchanges/{from}/{to}</code> (e <code>/exchange/...</code>), <code>GET /exchange/currencies</code></td>
+<td><code>GET /exchanges/{from}/{to}</code> (e <code>/exchange/...</code>), <code>GET /exchange/currencies</code>, <code>GET /exchange/health-check</code></td>
 <td>BACEN (PTAX)</td>
 </tr>
 </tbody>
@@ -1087,7 +1087,10 @@ sem módulo de interface (o contrato é o HTTP do enunciado). A versão Java ant
 <p>Os serviços Java expõem <code>/&lt;prefixo&gt;/actuator/health/{liveness,readiness}</code> (probes do
 Kubernetes) e <code>/&lt;prefixo&gt;/actuator/prometheus</code> (métricas), com o prefixo do próprio serviço como
 no hands-on 6; o <code>exchange-py</code> expõe <code>/health</code> e <code>/metrics</code> (com os mesmos nomes de métricas
-HTTP do Micrometer), fora das rotas do gateway.</p>
+HTTP do Micrometer), fora das rotas do gateway. Todos os serviços têm o health-check do
+enunciado, <code>GET /&lt;serviço&gt;/health-check</code> (<code>/accounts/...</code>, <code>/auth/...</code>, <code>/exchange/...</code>), que
+responde <code>200</code> sem corpo; pelo gateway, ele exige o cookie JWT como as demais rotas, e só o
+<code>/health-check</code> do próprio gateway é aberto.</p>
 <h2 id="stack">Stack</h2>
 <table>
 <thead>

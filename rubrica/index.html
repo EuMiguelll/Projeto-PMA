@@ -983,7 +983,7 @@ foi feito e onde está a evidência.</p>
 <tr>
 <td><strong>Exchange</strong></td>
 <td style="text-align: right;">5 %</td>
-<td>em <strong>Python/FastAPI</strong>, como pede o enunciado: o serviço do BACEN da disciplina sobre a PTAX (direto nos endpoints OData do BCB), com cotação cruzada via BRL, cache em memória com lock por moeda, cotação velha (<em>stale</em>) e falha rápida quando a PTAX cai, <code>422</code>/<code>404</code>/<code>502</code> claros e métricas; <code>id-account</code> vindo do token; 37 testes pytest e smoke test 18/18 com a PTAX real</td>
+<td>em <strong>Python/FastAPI</strong>, como pede o enunciado: o serviço do BACEN da disciplina sobre a PTAX (direto nos endpoints OData do BCB), com cotação cruzada via BRL, cache em memória com lock por moeda, cotação velha (<em>stale</em>) e falha rápida quando a PTAX cai, <code>422</code>/<code>404</code>/<code>502</code> claros e métricas; <code>id-account</code> vindo do token; health-check <code>GET /exchange/health-check</code> (200 sem corpo); 42 testes pytest e smoke test 21/21 com a PTAX real</td>
 <td><a href="../projeto/exchange/">Exchange</a> · <a href="https://github.com/EuMiguelll/Projeto-PMA/tree/main/api/exchange-py"><code>api/exchange-py</code></a> · <a href="https://github.com/EuMiguelll/Projeto-PMA/blob/main/docs/evidencias/exchange-py-ptax.txt">evidência</a></td>
 </tr>
 <tr>
