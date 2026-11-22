@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Teste ponta a ponta pelo gateway: registro -> login -> rotas seguras -> exchange.
+# Teste ponta a ponta pelo gateway: registro -> login -> rotas seguras -> exchange (18 verificações).
 #   ./scripts/smoke-test.sh                      # local (docker compose)
 #   ./scripts/smoke-test.sh http://<elb-dns>:8080 # EKS
 set -uo pipefail
@@ -40,11 +40,19 @@ check "GET /auth/me" "$EMAIL" "$(jq -r .email <<<"$ME" 2>/dev/null)"
 check "GET /accounts/{id} (1ª vez: banco)" 200 "$(code -b "$COOKIE" "$BASE/accounts/$ID")"
 check "GET /accounts/{id} (2ª vez: cache Redis)" 200 "$(code -b "$COOKIE" "$BASE/accounts/$ID")"
 
+# exchange-py (FastAPI sobre a PTAX do BCB): /exchanges/** do enunciado e /exchange/** da página do BACEN
 EX=$(curl -s -b "$COOKIE" -H 'id-account: hacker' "$BASE/exchanges/USD/BRL")
 echo "   exchange: $EX"
 check "GET /exchanges/USD/BRL tem sell/buy" yes "$(jq -e '.sell > 0 and .buy > 0' <<<"$EX" >/dev/null 2>&1 && echo yes || echo no)"
 check "id-account vem do token (header forjado descartado)" "${ID:-sem-id}" "$(jq -r '."id-account"' <<<"$EX" 2>/dev/null)"
-check "GET /exchanges/XXX/YYY (par inválido)" 404 "$(code -b "$COOKIE" "$BASE/exchanges/XXX/YYY")"
+xcache() { curl -s -o /dev/null -D - "$@" | tr -d '\r' | sed -n 's/^[Xx]-[Cc]ache: //p'; }
+check "GET /exchanges/USD/BRL de novo (cache em memória)" hit "$(xcache -b "$COOKIE" "$BASE/exchanges/USD/BRL")"
+CROSS=$(curl -s -b "$COOKIE" "$BASE/exchange/USD/EUR")
+echo "   exchange: $CROSS"
+check "GET /exchange/USD/EUR (cruzada via BRL, sell >= buy)" yes "$(jq -e '.buy > 0 and .sell >= .buy' <<<"$CROSS" >/dev/null 2>&1 && echo yes || echo no)"
+check "GET /exchange/USD/EUR sem cookie" 401 "$(code "$BASE/exchange/USD/EUR")"
+check "GET /exchanges/XXX/YYY (moeda desconhecida)" 404 "$(code -b "$COOKIE" "$BASE/exchanges/XXX/YYY")"
+check "GET /exchanges/US/BRL (código inválido)" 422 "$(code -b "$COOKIE" "$BASE/exchanges/US/BRL")"
 
 [[ $FAIL == 0 ]] && echo "SMOKE TEST OK" || echo "SMOKE TEST FALHOU"
 exit $FAIL

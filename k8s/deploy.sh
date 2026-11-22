@@ -17,9 +17,12 @@ if [[ -z "${DATABASE_HOST:-}" ]]; then
   kubectl rollout status deployment/postgres --timeout=300s
 fi
 
-for s in account auth exchange gateway; do
-  sed "s#DOCKERHUB_USER#$REGISTRY#g" "api/$s-service/k8s/k8s.yaml" | kubectl apply -f -
+# o exchange é o exchange-py (FastAPI, porta 8000); o exchange-service Java é a versão anterior
+for m in account-service auth-service exchange-py gateway-service; do
+  sed "s#DOCKERHUB_USER#$REGISTRY#g" "api/$m/k8s/k8s.yaml" | kubectl apply -f -
 done
+# gateway -> exchange-py na porta 8000 (explícito: vale também para imagens anteriores do gateway)
+kubectl patch configmap gateway-configmap --type merge -p '{"data":{"EXCHANGE_URI":"http://exchange:8000"}}'
 
 # segredos reais por cima dos valores de desenvolvimento dos manifests
 apply_secret() { kubectl create secret generic "$@" --dry-run=client -o yaml | kubectl apply -f -; }
@@ -30,7 +33,7 @@ if [[ -n "${DATABASE_HOST:-}" ]]; then
     --from-literal=DATABASE_USERNAME="${DATABASE_USERNAME:-store}" \
     --from-literal=DATABASE_PASSWORD="${DATABASE_PASSWORD:?defina DATABASE_PASSWORD do RDS}"
 fi
-kubectl rollout restart deployment/auth deployment/account
+kubectl rollout restart deployment/auth deployment/account deployment/gateway
 
 for d in redis account auth exchange gateway; do kubectl rollout status deployment/$d --timeout=300s; done
 kubectl get pods,svc,hpa

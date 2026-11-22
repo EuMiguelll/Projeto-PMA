@@ -35,8 +35,8 @@ aws cloudformation delete-stack --stack-name "$CLUSTER-vpc"
 aws cloudformation wait stack-delete-complete --stack-name "$CLUSTER-vpc"
 
 echo "==> 6/6 Repositórios do ECR (imagens)"
-for s in account auth exchange gateway; do
-  aws ecr delete-repository --repository-name "$s-service" --force >/dev/null 2>&1
+for r in account-service auth-service exchange-py exchange-service gateway-service; do
+  aws ecr delete-repository --repository-name "$r" --force >/dev/null 2>&1
 done
 
 echo "Feito. As roles IAM (eksClusterRole, eksNodeRole) não geram custo e foram mantidas."
