@@ -1,0 +1,59 @@
+# exchange-py: health-check — 2026-11-22 23:34:20 UTC = 22/11/2026 20:34 em Brasília
+# docker compose local: exchange = api/exchange-py (PTAX real), gateway = canavero/gateway-service 23b0fd6
+
+## 1. Direto no exchange (rede interna do compose; a porta 8000 não é publicada), sem o header id-account
+$ curl -si http://exchange:8000/exchange/health-check
+HTTP/1.1 200 OK
+date: Sun, 22 Nov 2026 23:34:21 GMT
+server: uvicorn
+content-length: 0
+
+$ curl -s -o /dev/null -w '%{http_code} %{size_download} bytes\n' http://exchange:8000/exchanges/health-check
+200 0 bytes
+$ curl -s http://exchange:8000/health      # contrato da página do BACEN: HEALTHCHECK do Docker e probes do k8s
+{"status":"ok"}
+$ docker inspect -f '{{.State.Health.Status}}' store-exchange-1
+healthy
+
+## 2. Pelo gateway: o health-check do serviço passa pelo filtro JWT, como toda rota roteada
+##    (no gateway só POST /auth/register, POST /auth/login e GET /auth/logout são abertas)
+GET /exchange/health-check sem cookie            -> 401
+GET /exchange/health-check com cookie            -> 200 (0 bytes)
+GET /exchanges/health-check sem cookie            -> 401
+GET /exchanges/health-check com cookie            -> 200 (0 bytes)
+# a mesma regra vale para os health-checks dos outros serviços; o do próprio gateway é aberto:
+GET /accounts/health-check sem cookie   -> 401
+GET /auth/health-check sem cookie       -> 401
+GET /accounts/health-check com cookie   -> 200
+GET /health-check (gateway, aberto)     -> 200
+
+## 3. Smoke test pelo gateway, com a PTAX real (21 verificações, 10 do exchange)
+$ ./scripts/smoke-test.sh
+✅ GET /health-check (aberto) -> 200
+✅ GET /info (aberto) -> 200
+✅ POST /auth/register -> 200
+✅ POST /auth/register (email repetido) -> 409
+✅ POST /auth/login (senha errada) -> 401
+✅ POST /auth/login devolve cookie JWT -> yes
+✅ GET /accounts sem cookie -> 401
+✅ GET /accounts com token forjado -> 401
+✅ GET /auth/me -> smoke.<ts>@insper.edu.br
+✅ GET /accounts/{id} (1ª vez: banco) -> 200
+✅ GET /accounts/{id} (2ª vez: cache Redis) -> 200
+   exchange: {"sell":5.8889,"buy":5.8883,"date":"2026-11-19 13:04:18","id-account":"8c88d0e2-eb1f-45f0-93a1-6e8c75bfa355"}
+✅ GET /exchanges/USD/BRL tem sell/buy -> yes
+✅ id-account vem do token (header forjado descartado) -> 8c88d0e2-eb1f-45f0-93a1-6e8c75bfa355
+✅ GET /exchanges/USD/BRL de novo (cache em memória) -> hit
+   exchange: {"sell":0.910763,"buy":0.910487,"date":"2026-11-19 13:04:18","id-account":"8c88d0e2-eb1f-45f0-93a1-6e8c75bfa355"}
+✅ GET /exchange/USD/EUR (cruzada via BRL, sell >= buy) -> yes
+✅ GET /exchange/USD/EUR sem cookie -> 401
+✅ GET /exchanges/XXX/YYY (moeda desconhecida) -> 404
+✅ GET /exchanges/US/BRL (código inválido) -> 422
+✅ GET /exchange/health-check (com cookie) -> 200
+✅ GET /exchanges/health-check (com cookie) -> 200
+✅ GET /exchange/health-check sem cookie (gateway exige JWT) -> 401
+SMOKE TEST OK
+
+## 4. Testes do exchange-py
+$ cd api/exchange-py && uv run pytest -q
+42 passed, 2 deselected in 2.73s
