@@ -23,13 +23,17 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
-      - name: Build & test (7 módulos, mvnw)
+      - uses: astral-sh/setup-uv@v7 # exchange-py
+        with:
+          enable-cache: true
+          cache-dependency-glob: api/exchange-py/uv.lock
+      - name: Build & test (7 módulos Java com mvnw + exchange-py com uv/pytest)
         run: ./scripts/build.sh
       - name: docker compose up
         env:
-          # No CI o exchange fala com um stub do PTAX do BACEN (setup/provider-stub): o teste fica
+          # No CI o exchange-py fala com um stub da PTAX do BACEN (setup/provider-stub): o teste fica
           # determinístico e não depende de rede externa.
-          EXCHANGE_PROVIDER_URL: http://provider-stub
+          PTAX_URL: http://provider-stub
         run: docker compose --profile e2e up -d --build db redis provider-stub account auth exchange gateway
       - name: Smoke test
         run: ./scripts/smoke-test.sh
