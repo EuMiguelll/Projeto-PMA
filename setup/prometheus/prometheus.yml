@@ -23,10 +23,10 @@ scrape_configs:
         labels:
           application: Account Application
 
-  - job_name: ExchangeMetrics
-    metrics_path: /exchanges/actuator/prometheus
+  - job_name: ExchangeMetrics # exchange-py (FastAPI + prometheus-client)
+    metrics_path: /metrics
     scrape_interval: 5s
     static_configs:
-      - targets: [exchange:8080]
+      - targets: [exchange:8000]
         labels:
           application: Exchange Application

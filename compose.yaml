@@ -24,7 +24,7 @@ services:
       interval: 5s
       retries: 20
 
-  redis: # cache (account, exchange) + rate limiting (gateway)
+  redis: # cache (account) + rate limiting (gateway)
     image: redis:7-alpine
 
   account:
@@ -47,16 +47,23 @@ services:
     environment:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-EBwrdOOcAIDRLON9hbJV0+O3PTdfTjgMCQIxwLH7ws8=}
 
+  # Python/FastAPI sobre a PTAX do BCB (serviço do BACEN da disciplina); porta 8000, sem publicar:
+  # só o gateway chega nele. O Java (api/exchange-service) é a versão anterior, fora do compose.
   exchange:
-    <<: *java
-    build: ./api/exchange-service
+    build: ./api/exchange-py
+    restart: unless-stopped
     environment:
-      REDIS_HOST: redis
-      # demo do circuit breaker: EXCHANGE_PROVIDER_URL=http://redis:6380 docker compose up -d exchange
-      EXCHANGE_PROVIDER_URL: ${EXCHANGE_PROVIDER_URL:-https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata}
+      # demo da PTAX fora (stale/502): PTAX_URL=http://redis:6380 docker compose up -d exchange
+      PTAX_URL: ${PTAX_URL:-https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata}
+      CACHE_SECONDS: ${CACHE_SECONDS:-300} # cotação reaproveitada por 5 min
+      RETRY_SECONDS: ${RETRY_SECONDS:-30}  # após uma falha da PTAX: 30 s servindo o cache (stale) ou 502
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
-  # E2E no CI: stub do PTAX do BACEN (teste determinístico, sem rede externa)
-  #   EXCHANGE_PROVIDER_URL=http://provider-stub docker compose --profile e2e up -d
+  # E2E no CI: stub da PTAX do BACEN (teste determinístico, sem rede externa)
+  #   PTAX_URL=http://provider-stub docker compose --profile e2e up -d
   provider-stub:
     image: nginx:1.29-alpine
     profiles: [e2e]
@@ -70,6 +77,7 @@ services:
       - 8080:8080
     environment:
       REDIS_HOST: redis
+      EXCHANGE_URI: http://exchange:8000 # rotas /exchange/** e /exchanges/** -> exchange-py
       RATE_LIMIT_REPLENISH: ${RATE_LIMIT_REPLENISH:-50}
       RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-100}
     depends_on:

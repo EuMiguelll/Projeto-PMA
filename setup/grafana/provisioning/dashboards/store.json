@@ -171,7 +171,7 @@
   {
    "id": 6,
    "type": "timeseries",
-   "title": "Heap JVM usada (MiB)",
+   "title": "Memória (MiB): heap da JVM e RSS do exchange-py",
    "gridPos": {
     "h": 8,
     "w": 12,
@@ -193,6 +193,56 @@
      "refId": "A",
      "expr": "sum by (job) (jvm_memory_used_bytes{area=\"heap\"}) / 1048576",
      "legendFormat": "{{job}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "process_resident_memory_bytes{job=\"ExchangeMetrics\"} / 1048576",
+     "legendFormat": "{{job}} (RSS, Python)",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    }
+   ]
+  },
+  {
+   "id": 7,
+   "type": "timeseries",
+   "title": "Exchange: respostas por X-Cache e chamadas à PTAX (por minuto)",
+   "gridPos": {
+    "h": 8,
+    "w": 24,
+    "x": 0,
+    "y": 24
+   },
+   "datasource": {
+    "type": "prometheus",
+    "uid": "prometheus"
+   },
+   "fieldConfig": {
+    "defaults": {
+     "unit": "short"
+    },
+    "overrides": []
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "expr": "sum by (cache) (increase(exchange_rate_responses_total[1m]))",
+     "legendFormat": "X-Cache: {{cache}}",
+     "datasource": {
+      "type": "prometheus",
+      "uid": "prometheus"
+     }
+    },
+    {
+     "refId": "B",
+     "expr": "sum by (outcome) (increase(ptax_requests_total[1m]))",
+     "legendFormat": "PTAX: {{outcome}}",
      "datasource": {
       "type": "prometheus",
       "uid": "prometheus"
