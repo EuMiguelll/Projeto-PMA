@@ -12,6 +12,7 @@ cache negativo, busca em paralelo, métricas Prometheus). Documentação complet
 |----------|----------|
 | `GET /exchange/{from}/{to}` (e `/exchanges/...`) | `{"sell", "buy", "date", "id-account"}` + header `X-Cache: miss \| hit \| stale`; exige o header `id-account` (o gateway injeta) |
 | `GET /exchange/currencies` | moedas que a PTAX cota, além do BRL |
+| `GET /exchange/health-check` (e `/exchanges/...`) | `200` sem corpo: o health-check do enunciado do projeto (sem `id-account`) |
 | `GET /health` | `{"status": "ok"}` (probes e `HEALTHCHECK`) |
 | `GET /metrics` | métricas Prometheus |
 | `GET /exchange/docs` | Swagger UI |
@@ -21,7 +22,7 @@ cota → `404`; PTAX fora e sem cotação guardada → `502`.
 
 ```bash
 uv sync                                  # dependências + grupo dev (pytest, respx)
-uv run pytest                            # 37 testes, PTAX simulada com respx (sem rede)
+uv run pytest                            # 42 testes, PTAX simulada com respx (sem rede)
 uv run pytest -m live -s                 # 2 testes contra a PTAX real (poucas chamadas)
 uv run uvicorn main:app --reload --port 8000
 curl -i -H "id-account: 0195ae95-5be7-7dd3-b35d-7a7d87c404fb" localhost:8000/exchange/USD/EUR

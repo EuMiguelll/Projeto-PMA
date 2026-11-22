@@ -44,12 +44,15 @@ flowchart LR
 | gateway | `store.gateway` | 8080 (única exposta) | `GET /health-check`, `GET /info`, rotas `/auth/**`, `/accounts/**`, `/exchange/**`, `/exchanges/**` | auth, Redis |
 | auth | `store.auth` | 8080 | `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /auth/solve`, `GET /auth/logout` | account |
 | account | `store.account` | 8080 | `POST /accounts`, `GET /accounts`, `GET/DELETE /accounts/{id}`, `POST /accounts/login` | PostgreSQL, Redis |
-| exchange | `api/exchange-py/main.py` (FastAPI) | 8000 | `GET /exchanges/{from}/{to}` (e `/exchange/...`), `GET /exchange/currencies` | BACEN (PTAX) |
+| exchange | `api/exchange-py/main.py` (FastAPI) | 8000 | `GET /exchanges/{from}/{to}` (e `/exchange/...`), `GET /exchange/currencies`, `GET /exchange/health-check` | BACEN (PTAX) |
 
 Os serviços Java expõem `/<prefixo>/actuator/health/{liveness,readiness}` (probes do
 Kubernetes) e `/<prefixo>/actuator/prometheus` (métricas), com o prefixo do próprio serviço como
 no hands-on 6; o `exchange-py` expõe `/health` e `/metrics` (com os mesmos nomes de métricas
-HTTP do Micrometer), fora das rotas do gateway.
+HTTP do Micrometer), fora das rotas do gateway. Todos os serviços têm o health-check do
+enunciado, `GET /<serviço>/health-check` (`/accounts/...`, `/auth/...`, `/exchange/...`), que
+responde `200` sem corpo; pelo gateway, ele exige o cookie JWT como as demais rotas, e só o
+`/health-check` do próprio gateway é aberto.
 
 ## Stack
 

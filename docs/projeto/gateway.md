@@ -17,6 +17,11 @@ porta publicada (compose) / `Service` `LoadBalancer` (Kubernetes).
 
 ## Como funciona a autorização
 
+Os health-checks dos serviços (`/accounts/health-check`, `/auth/health-check`,
+`/exchange/health-check`) são rotas roteadas como as outras: passam pelo filtro e, sem o cookie,
+recebem `401`. O `/health-check` do gateway é dele mesmo, não é roteado, e por isso é aberto
+(é o alvo do health check do ALB no `k8s/ingress.yaml`).
+
 ```mermaid
 flowchart TD
     A[Requisição] --> RL{RequestRateLimiter<br/>tokens no Redis?}

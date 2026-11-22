@@ -171,7 +171,9 @@ Escolhas de configuração:
 - **Probes**: `startupProbe` (até 3 min para a JVM subir com pouca CPU), `livenessProbe` e
   `readinessProbe` nos health groups do Actuator — o Service só manda tráfego para pods prontos e
   o rolling update não derruba a API. No `exchange-py` as três usam `GET /health` (o uvicorn sobe
-  em ~1 s), e a readiness **não** depende da PTAX: com o BCB fora, o pod segue servindo o cache.
+  em ~1 s), a rota que a página do BACEN reserva para o contêiner (o `/exchange/health-check` do
+  enunciado responde igual, sem depender da PTAX), e a readiness **não** depende da PTAX: com o
+  BCB fora, o pod segue servindo o cache.
 - **Segurança do pod** (`exchange-py`): `runAsNonRoot` (a imagem roda como UID 10001),
   `readOnlyRootFilesystem`, `allowPrivilegeEscalation: false`, todas as capabilities removidas e
   seccomp `RuntimeDefault`. A imagem foi testada no Docker com as mesmas restrições

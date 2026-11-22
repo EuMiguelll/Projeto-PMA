@@ -163,7 +163,7 @@ kubectl get svc gateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ELB=$(kubectl get svc gateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 curl http://$ELB/health-check          # {"hostname":"gateway-..."}
 curl http://$ELB/info
-./scripts/smoke-test.sh http://$ELB    # registro, login, rotas seguras, exchange (18 verificações)
+./scripts/smoke-test.sh http://$ELB    # registro, login, rotas seguras, exchange (21 verificações)
 
 # a PTAX do BCB responde da AWS? Uma chamada de dentro de um pod, como pede a página do BACEN
 kubectl run ptax --rm -i --restart=Never --image=curlimages/curl:8.17.0 -- \

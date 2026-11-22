@@ -19,7 +19,7 @@ carga e análise de custos.
 git clone --recurse-submodules https://github.com/EuMiguelll/Projeto-PMA.git && cd Projeto-PMA
 ./scripts/build.sh                 # 7 módulos Java (mvnw) + exchange-py (uv + pytest), um por vez
 docker compose up -d --build       # Postgres, Redis, 4 serviços, Prometheus, Grafana
-./scripts/smoke-test.sh            # registro → login → conta → câmbio pelo gateway (18 verificações)
+./scripts/smoke-test.sh            # registro → login → conta → câmbio pelo gateway (21 verificações)
 ```
 
 AWS: [AWS_RUNBOOK.md](AWS_RUNBOOK.md) · Publicação no GitHub: `./publish.sh`

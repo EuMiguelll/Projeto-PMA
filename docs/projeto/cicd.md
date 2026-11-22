@@ -54,8 +54,8 @@ caminho (`api/exchange-py/**`):
 
 | Job | O que faz |
 |-----|-----------|
-| **Testes (uv + pytest)** | `astral-sh/setup-uv` com cache do `uv.lock`, `uv sync --frozen` (falha se o lock não bate com o `pyproject.toml`), `uv run pytest -v` (37 testes, PTAX simulada), `ruff check` e `ruff format --check` |
-| **Imagem Docker** | `docker build`, sobe o contêiner com a PTAX inacessível de propósito e confere: `HEALTHCHECK` saudável, UID 10001, `/health`, `502` sem cache, `422` sem `id-account` e com código inválido, contador de erro em `/metrics`; depois o **Trivy** (HIGH/CRITICAL) na imagem |
+| **Testes (uv + pytest)** | `astral-sh/setup-uv` com cache do `uv.lock`, `uv sync --frozen` (falha se o lock não bate com o `pyproject.toml`), `uv run pytest -v` (42 testes, PTAX simulada), `ruff check` e `ruff format --check` |
+| **Imagem Docker** | `docker build`, sobe o contêiner com a PTAX inacessível de propósito e confere: `HEALTHCHECK` saudável, UID 10001, `/health`, `/exchange/health-check` e `/exchanges/health-check` (`200` sem corpo, sem `id-account`), `502` sem cache, `422` sem `id-account` e com código inválido, contador de erro em `/metrics`; depois o **Trivy** (HIGH/CRITICAL) na imagem |
 | **Imagem (ECR ou Docker Hub)** | igual aos serviços Java: `linux/amd64,linux/arm64`, tags `:latest` e `:<sha>`, repositório `exchange-py` |
 | **Deploy EKS** | `kubectl set image deployment/exchange exchange=<registry>/exchange-py:<sha>` + `rollout status` |
 
@@ -100,9 +100,10 @@ branch `gh-pages` (`mkdocs gh-deploy`).
 | [`Projeto-PMA`](https://github.com/EuMiguelll/Projeto-PMA/tree/main/.github/workflows) | exchange-py e E2E com o exchange-py | 🖥️ | 🖥️ | ⏭️ |
 
 🖥️ = reproduzido localmente em 22/11/2026, passo a passo e com os mesmos comandos dos
-workflows, porque o Actions do `Projeto-PMA` está desligado (abaixo): `uv sync --frozen`, 37
-testes, ruff, `docker build`, o teste do contêiner do job *Imagem Docker* e o E2E com o stub
-(smoke test **18/18**); os workflows passam no `actionlint` (com `shellcheck`).
+workflows, porque o Actions do `Projeto-PMA` está desligado (abaixo): `uv sync --frozen`, os
+testes (37; 42 com o health-check, na noite de 22/11), ruff, `docker build`, o teste do contêiner
+do job *Imagem Docker* e o E2E com o stub (smoke test **18/18**; **21/21** com o health-check);
+os workflows passam no `actionlint` (com `shellcheck`).
 ⏭️ = *skipped* de propósito: os jobs de imagem e deploy só ligam com as variáveis `AWS_ECR`/`EKS_CLUSTER`
 e a role OIDC. Para o deploy real, os mesmos passos rodaram à mão, com os mesmos comandos
 (`push-images.sh` → ECR, `deploy.sh`, `kubectl set image`), como mostram as
@@ -112,8 +113,8 @@ mínimo de AWS.
 
 ### E2E hermético
 
-O E2E sobe a plataforma inteira com `docker compose` e roda o smoke test pelo gateway (18
-verificações, 7 do exchange). No CI o `exchange-py` fala com um **stub** da PTAX do BACEN
+O E2E sobe a plataforma inteira com `docker compose` e roda o smoke test pelo gateway (21
+verificações, 10 do exchange). No CI o `exchange-py` fala com um **stub** da PTAX do BACEN
 (nginx com respostas fixas, `setup/provider-stub/default.conf`) que responde às mesmas URLs
 OData que o serviço chama: as cotações de `USD` e `EUR` em `CotacaoMoedaPeriodo`, uma lista
 vazia para moedas desconhecidas (o exchange responde `404`), como a API real, e a lista de
@@ -124,7 +125,7 @@ real foi testada pelo mesmo smoke test no compose ([evidência](../evidencias/ex
 ```bash
 PTAX_URL=http://provider-stub docker compose --profile e2e up -d --build \
   db redis provider-stub account auth exchange gateway
-./scripts/smoke-test.sh   # 18/18
+./scripts/smoke-test.sh   # 21/21
 ```
 
 ## Boas práticas aplicadas

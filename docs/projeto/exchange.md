@@ -26,6 +26,7 @@ Cotações de câmbio (exercício *Exchange API*): `GET /exchanges/{from}/{to}` 
 |------------------|----------|
 | `GET /exchanges/{from}/{to}` (enunciado) e `GET /exchange/{from}/{to}` (página do BACEN) | `200 {"sell", "buy", "date", "id-account"}` + header `X-Cache: miss \| hit \| stale` |
 | `GET /exchange/currencies` | as moedas que a PTAX cota (além do BRL) |
+| `GET /exchange/health-check` (e `/exchanges/health-check`) | `200` sem corpo: o health-check que o enunciado do projeto pede a todo microsserviço (`GET /<serviço>/health-check`); não exige `id-account` nem chama a PTAX |
 | `GET /exchange/docs` | Swagger UI (OpenAPI em `/exchange/openapi.json`) |
 | `GET /health` | `{"status": "ok"}`: probes do Kubernetes e `HEALTHCHECK` do Docker (fora do gateway) |
 | `GET /metrics` | métricas Prometheus (fora do gateway) |
@@ -54,6 +55,23 @@ x-cache: hit
 
 O gateway remove qualquer `id-account` enviado pelo cliente e coloca o da conta do token
 (smoke test: um `id-account: hacker` forjado é descartado), então o serviço confia no header.
+
+!!! note "Health-check: no serviço e pelo gateway"
+    No serviço, `/exchange/health-check` segue o padrão dos serviços Java (`/accounts/health-check`,
+    `/auth/health-check`): `200` sem corpo, sem dados internos, sem exigir `id-account` e sem
+    depender da PTAX. Ele é declarado antes de `/exchange/{from}/{to}`, e os testes conferem que
+    `health-check` não vira um par de moedas (nem `404` nem `422`).
+
+    **Pelo gateway, ele exige login**, como toda rota roteada: o filtro JWT só deixa abertas
+    `POST /auth/register`, `POST /auth/login` e `GET /auth/logout`. Sem o cookie, `401`; com ele,
+    `200`. A regra é a mesma para os health-checks do account e do auth, e só o
+    `/health-check` do próprio gateway é aberto ([evidência](#evidencias)). Não mudamos o gateway
+    para isso.
+
+    O `HEALTHCHECK` do Docker e as probes do Kubernetes continuam em `GET /health`, a rota que a
+    página do BACEN reserva para o contêiner. Nos serviços Java as probes também não usam o
+    health-check, e sim o Actuator; as duas rotas do exchange são equivalentes (respondem sem
+    tocar na PTAX).
 
 ## Como funciona
 
@@ -141,6 +159,7 @@ mudanças corrigem situações que medimos ou que os testes mostraram:
 | Boletim mais recente | o último da lista | o de maior `dataHoraCotacao` (não depende da ordem) |
 | Data de hoje | a do contêiner, em UTC (das 21 h à meia-noite de Brasília, já é o dia seguinte) | a de Brasília |
 | `/exchange/currencies` | chama a PTAX toda vez | mesmo cache e mesmo stale das cotações |
+| Health-check | `GET /health` | `GET /health` e o `GET /exchange/health-check` do enunciado do projeto |
 | Observabilidade | — | `/metrics` com os nomes do Micrometer: o exchange entra no dashboard do Grafana |
 | Contêiner | (tarefa do aluno) | `python:3.12-slim` + uv, `uv sync --frozen --no-dev`, UID 10001, `HEALTHCHECK`, roda com o sistema de arquivos só leitura |
 
@@ -215,7 +234,7 @@ como as outras ([Gateway](gateway.md)).
 
 ## Testes
 
-`api/exchange-py/tests` — **37 testes** com a PTAX simulada pelo `respx` (nenhum sai para a
+`api/exchange-py/tests` — **42 testes** com a PTAX simulada pelo `respx` (nenhum sai para a
 rede) e **2** contra a PTAX real, marcados `live` e fora do `pytest` padrão:
 
 | Grupo | O que conferem |
@@ -224,22 +243,23 @@ rede) e **2** contra a PTAX real, marcados `live` e fora do `pytest` padrão:
 | Fim de semana | domingo 22/11 → janela `11-15-2026`…`11-22-2026` e o fechamento de quinta; boletim escolhido pela data, não pela posição |
 | Erros | `404` (origem, destino, `XXX/YYY`) e o 404 em cache; `422` sem `id-account` e com código inválido, sem chamar a PTAX; `502` sem cache para timeout, conexão recusada, 500, 429, HTML e JSON sem `value`, sem detalhes internos; falha rápida |
 | Cache | `miss` → `hit`, cache por moeda entre pares, expiração, `stale` com a PTAX fora e nova chamada depois de `RETRY_SECONDS`; **20 requisições simultâneas → 2 chamadas** à PTAX |
-| Outros | `/exchange/currencies` (e cache e 502), `/health`, `/metrics` (contadores e o template da rota), OpenAPI com o contrato |
+| Health-check | `/exchange/health-check` e `/exchanges/health-check`: `200` sem corpo e sem `id-account`, não capturados como par de moedas, respondendo com a PTAX fora; `/health` inalterado |
+| Outros | `/exchange/currencies` (e cache e 502), `/metrics` (contadores e o template da rota), OpenAPI com o contrato |
 
 ```console
 $ cd api/exchange-py && uv run pytest
-37 passed, 2 deselected in 1.79s
+42 passed, 2 deselected in 2.37s
 $ uv run pytest -m live -s        # PTAX real
 GET /exchange/USD/EUR -> 200 miss {"sell":0.910763,"buy":0.910487,"date":"2026-11-19 13:04:18",...}
-2 passed, 37 deselected in 2.63s
+2 passed, 42 deselected in 2.42s
 ```
 
 Conferimos que os testes pegam erros de verdade: com a fórmula invertida, o regex sem âncora,
 sem o lock por moeda, com o boletim pela posição, com uma janela de 1 dia, sem o stale ou sem o
 cache de 404, a suíte falha (de 1 a 13 testes em cada caso). No CI, o workflow
 [`exchange-py`](cicd.md#exchange-py-python) roda o pytest, o ruff, constrói a imagem e testa o
-contêiner; o E2E sobe a plataforma com um stub da PTAX e roda o smoke test (18 verificações,
-7 delas do exchange).
+contêiner; o E2E sobe a plataforma com um stub da PTAX e roda o smoke test (21 verificações,
+10 delas do exchange, 3 do health-check).
 
 ## Evidências
 
@@ -247,6 +267,12 @@ contêiner; o E2E sobe a plataforma com um stub da PTAX e roda o smoke test (18 
 
     ```text
     --8<-- "docs/evidencias/exchange-py-ptax.txt"
+    ```
+
+??? example "Health-check: direto no serviço e pelo gateway, e o smoke test 21/21 (22/11/2026)"
+
+    ```text
+    --8<-- "docs/evidencias/exchange-py-health-check.txt"
     ```
 
 ??? example "Cache, carga leve, PTAX fora e PTAX lenta (lado a lado com o serviço original)"
