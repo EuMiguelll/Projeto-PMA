@@ -1,0 +1,35 @@
+[project]
+name = "exchange"
+version = "1.0.0"
+description = "Exchange do Projeto Store: câmbio pela PTAX do Banco Central do Brasil (FastAPI)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "httpx>=0.27",
+    "uvicorn[standard]>=0.30",
+    "prometheus-client>=0.20",
+]
+
+# só para os testes: `uv sync` instala, `uv sync --no-dev` (Dockerfile) não
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "respx>=0.22",
+]
+
+[tool.uv]
+package = false # serviço, não biblioteca: o uv instala só as dependências
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-m 'not live'"
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient` is deprecated"]  # aviso do Starlette novo, não do serviço
+markers = ["live: chama a PTAX real (olinda.bcb.gov.br); rode à parte com `uv run pytest -m live`"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+extend-select = ["I", "B", "UP", "SIM"]
+isort.known-first-party = ["main", "conftest"]
