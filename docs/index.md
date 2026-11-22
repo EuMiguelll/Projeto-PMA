@@ -10,9 +10,10 @@
 
 </div>
 
-Plataforma de microsserviços **Spring Boot 4.1 / Java 25** para uma loja (compra e venda de
-produtos), com **API Gateway** (Spring Cloud Gateway), **autenticação JWT**, **gestão de contas**
-(PostgreSQL) e **câmbio de moedas** (API de terceiros), empacotada em Docker, orquestrada no
+Plataforma de microsserviços **Spring Boot 4.1 / Java 25** e **Python 3.12 / FastAPI** para uma
+loja (compra e venda de produtos), com **API Gateway** (Spring Cloud Gateway), **autenticação JWT**,
+**gestão de contas** (PostgreSQL) e **câmbio de moedas** (FastAPI sobre a PTAX do Banco Central,
+o serviço do BACEN da disciplina), empacotada em Docker, orquestrada no
 **Kubernetes (Amazon EKS)**, com **CI/CD no GitHub Actions**, **bottlenecks** implementados
 (cache Redis, circuit breaker/retry, rate limiting, observabilidade, varredura de
 vulnerabilidades, autoscaling), **teste de carga com HPA** e **análise de custos**.
@@ -24,11 +25,10 @@ flowchart LR
     subgraph eks [Kubernetes — trusted layer]
         gw[gateway] -->|/auth/**| auth
         gw -->|/accounts/**| account
-        gw -->|/exchanges/**| exchange
+        gw -->|"/exchange/** e /exchanges/**"| exchange["exchange<br/>FastAPI · cache em memória"]
         auth -->|Feign| account
         account --> db[(PostgreSQL)]
         account -.cache.-> redis[(Redis)]
-        exchange -.cache.-> redis
         gw -.rate limit.-> redis
     end
     exchange -->|HTTPS| api[[BACEN PTAX<br/>cotações]]
@@ -46,13 +46,15 @@ flowchart LR
 - [x] Apresentação (slides) e roteiro do vídeo de 1–2 min — [Apresentação](projeto/apresentacao.md)
 - [x] **Execução real no EKS** (15/11/2026): cluster `eks-store` 1.37, RDS PostgreSQL, imagens no ECR, ELB público, HPA do gateway 1 → 10 réplicas; depois reduzido ao mínimo (2 nós **Spot**, 1 NAT, Postgres no cluster, ECR com lifecycle: US$ 0,34 → **0,21/h**) — [AWS e EKS](projeto/eks.md#deploy-real-no-eks-15112026), [Custos](projeto/custos.md#otimizacoes-aplicadas), [Teste de carga](projeto/load-testing.md#resultado-no-eks)
 - [x] Câmbio pelo PTAX do BACEN (público, sem API key): a AwesomeAPI recusava os IPs da AWS sem chave (com a chave, smoke test pelo ELB **14/14**); trocamos após o aviso do professor — [Exchange](projeto/exchange.md) — [AWS e EKS](projeto/eks.md#deploy-real-no-eks-15112026)
+- [x] **Exchange em Python/FastAPI** (como pede o enunciado): o serviço do BACEN da disciplina em `api/exchange-py`, com Dockerfile uv, 37 testes, métricas no Grafana e falha rápida medida (10 requisições com a PTAX lenta: ~3 s contra ~30 s do original); smoke test **18/18** com a PTAX real — [Exchange](projeto/exchange.md)
 - [x] **E2E no CI** hermético (stub do PTAX do BACEN), smoke test 14/14 a cada push — [CI/CD](projeto/cicd.md#e2e-hermetico)
 - [x] **Vídeo do teste de carga com HPA** (gateway 1 → 10 réplicas e volta a 1) — [Teste de carga](projeto/load-testing.md#video-do-teste-de-carga)
 - [x] **Apresentação** (slides) e **vídeo de 1 min 51 s** narrado — [Apresentação](projeto/apresentacao.md)
 
 ## Repositórios
 
-O repositório principal agrega os serviços como **submódulos Git** em `api/`, como no hands-on 0:
+O repositório principal agrega os serviços Java como **submódulos Git** em `api/`, como no
+hands-on 0; o Exchange em Python fica numa pasta do próprio repositório principal (`api/exchange-py`):
 
 | Repositório | Papel | Caminho |
 |-------------|-------|---------|
@@ -63,8 +65,9 @@ O repositório principal agrega os serviços como **submódulos Git** em `api/`,
 | [`auth-service`](https://github.com/canavero/auth-service) | login, emissão e validação de JWT | `api/auth-service` |
 | [`account`](https://github.com/canavero/account) | interface do Account (Feign + DTOs) | `api/account` |
 | [`account-service`](https://github.com/canavero/account-service) | cadastro e dados de usuários (PostgreSQL) | `api/account-service` |
-| [`exchange`](https://github.com/canavero/exchange) | interface do Exchange (Feign + DTOs) | `api/exchange` |
-| [`exchange-service`](https://github.com/canavero/exchange-service) | cotações de câmbio | `api/exchange-service` |
+| [`Projeto-PMA/api/exchange-py`](https://github.com/EuMiguelll/Projeto-PMA/tree/main/api/exchange-py) | **Exchange** em Python/FastAPI (serviço do BACEN da disciplina) | `api/exchange-py` |
+| [`exchange`](https://github.com/canavero/exchange) | versão anterior (Java): interface do Exchange (Feign + DTOs) | `api/exchange` |
+| [`exchange-service`](https://github.com/canavero/exchange-service) | versão anterior (Java) do Exchange, fora do gateway | `api/exchange-service` |
 
 ```bash
 git clone --recurse-submodules https://github.com/EuMiguelll/Projeto-PMA.git

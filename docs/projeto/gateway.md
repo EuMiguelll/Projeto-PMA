@@ -12,7 +12,7 @@ porta publicada (compose) / `Service` `LoadBalancer` (Kubernetes).
 | GET | `/info` | aberto | nome, versão, hostname, versão do Java, uptime, CPUs — alvo do teste de carga |
 | * | `/auth/**` | aberto: `POST /auth/register`, `POST /auth/login`, `GET /auth/logout`; o resto exige cookie | → `auth:8080` |
 | * | `/accounts/**` | cookie JWT | → `account:8080` |
-| * | `/exchanges/**` | cookie JWT | → `exchange:8080` |
+| * | `/exchanges/**` (enunciado) e `/exchange/**` (página do BACEN) | cookie JWT | → `exchange:8000` ([exchange-py](exchange.md), FastAPI) |
 | GET | `/gateway/actuator/{health,prometheus}` | interno | probes e métricas |
 
 ## Como funciona a autorização
@@ -62,6 +62,9 @@ as URIs das rotas são configuráveis por variável de ambiente, e foi adicionad
 ## Testes
 
 `RouterValidatorTest` — rotas abertas (login, register, logout) vs. seguras (inclusive
-`GET /auth/login`, método errado, e `POST /auth/solve`). O comportamento ponta a ponta
+`GET /auth/login`, método errado, `POST /auth/solve` e as duas rotas do exchange).
+`RoutesTest` — sobe o contexto do Spring e passa caminhos reais pelos predicados do
+`application.yaml`: `/exchanges/USD/BRL`, `/exchange/USD/EUR` e `/exchange/currencies` vão para
+`http://exchange:8000`, e um prefixo parecido (`/exchangesX/...`) não casa com nenhuma rota. O comportamento ponta a ponta
 (401 sem cookie, 401 com token forjado, header `id-account` forjado descartado) é coberto pelo
 [smoke test](local.md#smoke-test).

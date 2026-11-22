@@ -45,7 +45,7 @@ e-mail duplicado (409 em vez de 500 vindo da constraint `UNIQUE`).
     --8<-- "api/account-service/src/main/resources/application.yaml"
     ```
 
-**Bottleneck:** cache Redis em `findById` — ver [Bottlenecks](bottlenecks.md#1-cache-redis-account-e-exchange).
+**Bottleneck:** cache Redis em `findById` — ver [Bottlenecks](bottlenecks.md#1-cache-account-e-exchange).
 
 ## Testes
 

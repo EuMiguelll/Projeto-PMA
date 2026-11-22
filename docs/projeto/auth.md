@@ -44,7 +44,7 @@ Kubernetes — a de desenvolvimento do `application.yaml` é pública).
     ```
 
 **Bottleneck:** circuit breaker Resilience4j nas chamadas ao `account` — ver
-[Bottlenecks](bottlenecks.md#2-circuit-breaker-e-retry-auth-e-exchange).
+[Bottlenecks](bottlenecks.md#2-resiliencia-auth-e-exchange).
 
 ## Testes
 
