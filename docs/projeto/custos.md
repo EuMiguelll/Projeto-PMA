@@ -327,6 +327,6 @@ SLIs medidos com as métricas que o projeto já exporta para o Prometheus:
 ```
 
 O que no projeto protege o SLO: readiness probes + rolling update (deploy sem downtime),
-circuit breakers (falha rápida e parcial em vez de cascata), cache (o exchange continua
-respondendo por até 60 s com o BACEN fora), rate limiting (protege contra sobrecarga), HPA
+circuit breakers (falha rápida e parcial em vez de cascata), cache (com o BACEN fora, o exchange
+continua respondendo com a última cotação, marcada `X-Cache: stale`), rate limiting (protege contra sobrecarga), HPA
 (capacidade acompanha a demanda) e nós em 2 AZs.

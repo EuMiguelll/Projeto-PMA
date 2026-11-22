@@ -163,7 +163,11 @@ kubectl get svc gateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ELB=$(kubectl get svc gateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 curl http://$ELB/health-check          # {"hostname":"gateway-..."}
 curl http://$ELB/info
-./scripts/smoke-test.sh http://$ELB    # registro, login, rotas seguras, exchange
+./scripts/smoke-test.sh http://$ELB    # registro, login, rotas seguras, exchange (18 verificações)
+
+# a PTAX do BCB responde da AWS? Uma chamada de dentro de um pod, como pede a página do BACEN
+kubectl run ptax --rm -i --restart=Never --image=curlimages/curl:8.17.0 -- \
+  curl -s -w '\nHTTP %{http_code}\n' 'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/Moedas?$format=json&$top=1'
 ```
 
 !!! note "Cookie `Secure` em HTTP"
@@ -186,7 +190,8 @@ aws iam create-role --role-name github-actions-store --assume-role-policy-docume
   "Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"sts:AssumeRoleWithWebIdentity",
   "Principal":{"Federated":"arn:aws:iam::'"$ACCOUNT"':oidc-provider/token.actions.githubusercontent.com"},
   "Condition":{"StringEquals":{"token.actions.githubusercontent.com:aud":"sts.amazonaws.com"},
-               "StringLike":{"token.actions.githubusercontent.com:sub":"repo:<owner>/*-service:ref:refs/heads/main"}}}]}'
+               "StringLike":{"token.actions.githubusercontent.com:sub":["repo:<owner>/*-service:ref:refs/heads/main",
+                                                                      "repo:<main-owner>/Projeto-PMA:ref:refs/heads/main"]}}}]}'
 aws iam attach-role-policy --role-name github-actions-store \
   --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
 aws iam put-role-policy --role-name github-actions-store --policy-name eks-describe \
@@ -198,10 +203,11 @@ aws eks associate-access-policy --cluster-name eks-store \
   --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSEditPolicy \
   --access-scope type=namespace,namespaces=default
 
-for r in account-service auth-service exchange-service gateway-service; do
-  gh variable set AWS_ECR -b true -R "<owner>/$r"
-  gh variable set EKS_CLUSTER -b eks-store -R "<owner>/$r"
-  gh secret set AWS_ROLE_ARN -b "arn:aws:iam::$ACCOUNT:role/github-actions-store" -R "<owner>/$r"
+# o exchange-py (Python) mora no repositório principal: o workflow dele lê as variáveis de lá
+for r in "<owner>/account-service" "<owner>/auth-service" "<owner>/gateway-service" "<main-owner>/Projeto-PMA"; do
+  gh variable set AWS_ECR -b true -R "$r"
+  gh variable set EKS_CLUSTER -b eks-store -R "$r"
+  gh secret set AWS_ROLE_ARN -b "arn:aws:iam::$ACCOUNT:role/github-actions-store" -R "$r"
 done
 ```
 

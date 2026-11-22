@@ -50,7 +50,8 @@ docker run --rm -i -e BASE_URL=http://$ELB -e VUS=150 grafana/k6 run - < load-te
 ```
 
 Cenários: `info` (rampa de VUs no `/info`, alvo do HPA) e `user_flow` (login → `/auth/me` →
-`/exchanges/USD/BRL`, que exercita JWT, cache Redis e o rate limiting — `429` é esperado).
+`/exchanges/USD/BRL`, que exercita JWT, o cache do exchange e o rate limiting — `429` é esperado;
+com o cache, a carga inteira vira poucas chamadas à PTAX: não faça teste de carga direto no BCB).
 O resumo final mostra `http_reqs`, latência p(95) e os *checks*.
 
 ## Roteiro de gravação (≈ 1 min de tela)

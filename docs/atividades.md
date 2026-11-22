@@ -5,7 +5,7 @@ do projeto. Esta página liga cada exercício da disciplina ao que foi entregue.
 
 | Exercício | Status | Onde está |
 |-----------|--------|-----------|
-| **Exchange API** | ✅ | `exchange` + `exchange-service` — [Exchange](projeto/exchange.md). O exercício pede FastAPI/Python; no projeto foi feito em Java (justificativa na página) |
+| **Exchange API** | ✅ | `api/exchange-py` — [Exchange](projeto/exchange.md): **FastAPI/Python**, como pede o exercício, a partir do serviço do BACEN da disciplina (Dockerfile com uv, gateway, compose, Kubernetes, testes). A versão anterior, em Java, segue nos submódulos `exchange` + `exchange-service` |
 | **Bottlenecks** | ✅ | 6 bottlenecks implementados e medidos — [Bottlenecks](projeto/bottlenecks.md) |
 | **MiniKube** | ✅ | `k8s/k8s.yaml` em cada repositório de serviço; implantado num cluster local (kind) com smoke test 14/14 e HPA — [Teste de carga](projeto/load-testing.md#resultado-no-kubernetes-local-kind) |
 | **Jenkins** | ↪︎ GitHub Actions | a rubrica aceita *Jenkins **ou** GitHub Actions*; usamos o GitHub Actions com as mesmas etapas do exercício (SCM → dependências → build → imagem → deploy no K8s) — [CI/CD](projeto/cicd.md) |

@@ -100,6 +100,13 @@ os nós a 42 % / 26 % de CPU e ~60 % de memória.
     público e não pede chave. A API key e o Secret `exchange-secrets` deixaram de existir
     ([Exchange](exchange.md)).
 
+    **Por fim (22/11):** o Exchange passou a ser o `exchange-py`, o serviço em Python/FastAPI da
+    página do BACEN da disciplina (o enunciado pede Python). Como o cluster já tinha sido
+    destruído (16/11, 02:30 UTC), nenhuma das versões na PTAX chegou a ser chamada do EKS — a
+    AWS não foi recriada para isso, para não gastar. Os manifests estão prontos
+    (`api/exchange-py/k8s/k8s.yaml`, aplicado pelo `deploy.sh`), e a conferência que a página
+    pede, uma chamada à PTAX de dentro de um pod, está no [Runbook](runbook.md#6-testar).
+
 ??? example "Saídas: `kubectl get nodes/pods/svc/hpa`, `kubectl top`, EKS, RDS e ECR"
 
     ```text
@@ -132,7 +139,7 @@ Cada repositório de serviço tem o seu `k8s/k8s.yaml` (como pede o exercício M
 |---------|----------|
 | `api/account-service/k8s/k8s.yaml` | Secret (usuário/senha do banco), ConfigMap (host, porta, base, Redis), Deployment, Service `ClusterIP`, HPA 1–3 |
 | `api/auth-service/k8s/k8s.yaml` | Secret (`JWT_SECRET_KEY`), ConfigMap, Deployment, Service `ClusterIP`, HPA 1–3 |
-| `api/exchange-service/k8s/k8s.yaml` | ConfigMap (Redis, URL do PTAX), Deployment, Service `ClusterIP`, HPA 1–3 |
+| `api/exchange-py/k8s/k8s.yaml` | ConfigMap (URL da PTAX, timeout, cache), Deployment (porta 8000, `runAsNonRoot`, sistema de arquivos só leitura), Service `ClusterIP`, HPA 1–3 |
 | `api/gateway-service/k8s/k8s.yaml` | ConfigMap (Redis, rate limit), Deployment, Service **`LoadBalancer`** (portas 80 e 8080), HPA **1–10** |
 | `k8s/postgres.yaml` | Secret, ConfigMap, Deployment, Service do Postgres (sem volume, como no hands-on 5) |
 | `k8s/redis.yaml` | Deployment + Service do Redis (64 MB, LRU) |
@@ -144,6 +151,12 @@ Cada repositório de serviço tem o seu `k8s/k8s.yaml` (como pede o exercício M
     --8<-- "api/gateway-service/k8s/k8s.yaml"
     ```
 
+??? example "api/exchange-py/k8s/k8s.yaml"
+
+    ```yaml
+    --8<-- "api/exchange-py/k8s/k8s.yaml"
+    ```
+
 ??? example "api/account-service/k8s/k8s.yaml"
 
     ```yaml
@@ -153,11 +166,18 @@ Cada repositório de serviço tem o seu `k8s/k8s.yaml` (como pede o exercício M
 Escolhas de configuração:
 
 - **Recursos**: `requests` 100m CPU (gateway: 200m) e 384 Mi; `limits` 1 CPU e 512 Mi. O HPA
-  calcula a utilização sobre o *request*, então 50 % ≈ 100m de CPU no gateway.
+  calcula a utilização sobre o *request*, então 50 % ≈ 100m de CPU no gateway. O `exchange-py`
+  (Python, sem JVM) pede 50m e 96 Mi, com limite de 500m e 256 Mi.
 - **Probes**: `startupProbe` (até 3 min para a JVM subir com pouca CPU), `livenessProbe` e
   `readinessProbe` nos health groups do Actuator — o Service só manda tráfego para pods prontos e
-  o rolling update não derruba a API.
-- **Imagens**: `DOCKERHUB_USER/<serviço>-service` nos manifests; o `deploy.sh` troca o prefixo
+  o rolling update não derruba a API. No `exchange-py` as três usam `GET /health` (o uvicorn sobe
+  em ~1 s), e a readiness **não** depende da PTAX: com o BCB fora, o pod segue servindo o cache.
+- **Segurança do pod** (`exchange-py`): `runAsNonRoot` (a imagem roda como UID 10001),
+  `readOnlyRootFilesystem`, `allowPrivilegeEscalation: false`, todas as capabilities removidas e
+  seccomp `RuntimeDefault`. A imagem foi testada no Docker com as mesmas restrições
+  (`--read-only --cap-drop ALL --security-opt no-new-privileges`), e os manifests passam no
+  `kubeconform -strict`.
+- **Imagens**: `DOCKERHUB_USER/<serviço>-service` (e `DOCKERHUB_USER/exchange-py`) nos manifests; o `deploy.sh` troca o prefixo
   pelo registry do **ECR** da conta (ou por um usuário do Docker Hub). Só `amd64` (a arquitetura
   dos nós t3), o que deixa o ECR com metade do tamanho; `PLATFORMS=linux/amd64,linux/arm64` gera
   também `arm64` (Mac/Graviton). `imagePullPolicy: IfNotPresent` porque o CI faz deploy com

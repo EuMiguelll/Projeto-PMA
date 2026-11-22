@@ -43,6 +43,12 @@ com o Playwright; a montagem foi feita com o `ffmpeg`.
 
 ## Slides
 
+!!! note "Depois da gravação"
+    Os slides e os vídeos são de 15–16/11/2026, quando o Exchange ainda era o serviço Java (com a
+    AwesomeAPI e, depois, a PTAX). Em 22/11 ele passou a ser o serviço **Python/FastAPI** do BACEN
+    da disciplina, como pede o enunciado: o fluxo mostrado (gateway → JWT → câmbio) é o mesmo, e
+    os detalhes estão em [Exchange](exchange.md).
+
 <div class="grid" markdown>
 
 ![Capa](../assets/slides/s1-title.png)

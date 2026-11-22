@@ -25,8 +25,8 @@ flowchart LR
 
 Sem as variáveis, os jobs de imagem e deploy ficam **skipped** (não falham) — o pipeline já
 funciona antes da AWS existir. Os módulos de interface (`account`, `auth`, `exchange`) têm um
-workflow só de build; o repositório principal tem o **E2E** (compose + smoke test com os
-submódulos) e o **docs** (MkDocs → GitHub Pages).
+workflow só de build; o repositório principal tem o **exchange-py** (o Exchange em Python, que
+mora nele), o **E2E** (compose + smoke test com os submódulos) e o **docs** (MkDocs → GitHub Pages).
 
 ??? example "api/auth-service/.github/workflows/ci.yml"
 
@@ -34,11 +34,34 @@ submódulos) e o **docs** (MkDocs → GitHub Pages).
     --8<-- "api/auth-service/.github/workflows/ci.yml"
     ```
 
+??? example ".github/workflows/exchange-py.yml (repositório principal)"
+
+    ```yaml
+    --8<-- ".github/workflows/exchange-py.yml"
+    ```
+
 ??? example ".github/workflows/e2e.yml (repositório principal)"
 
     ```yaml
     --8<-- ".github/workflows/e2e.yml"
     ```
+
+## exchange-py (Python)
+
+O [Exchange](exchange.md) é Python/FastAPI e fica em `api/exchange-py/` do repositório
+principal, então o workflow dele está lá, com as mesmas etapas dos serviços Java e filtro de
+caminho (`api/exchange-py/**`):
+
+| Job | O que faz |
+|-----|-----------|
+| **Testes (uv + pytest)** | `astral-sh/setup-uv` com cache do `uv.lock`, `uv sync --frozen` (falha se o lock não bate com o `pyproject.toml`), `uv run pytest -v` (37 testes, PTAX simulada), `ruff check` e `ruff format --check` |
+| **Imagem Docker** | `docker build`, sobe o contêiner com a PTAX inacessível de propósito e confere: `HEALTHCHECK` saudável, UID 10001, `/health`, `502` sem cache, `422` sem `id-account` e com código inválido, contador de erro em `/metrics`; depois o **Trivy** (HIGH/CRITICAL) na imagem |
+| **Imagem (ECR ou Docker Hub)** | igual aos serviços Java: `linux/amd64,linux/arm64`, tags `:latest` e `:<sha>`, repositório `exchange-py` |
+| **Deploy EKS** | `kubectl set image deployment/exchange exchange=<registry>/exchange-py:<sha>` + `rollout status` |
+
+As variáveis (`AWS_ECR`, `EKS_CLUSTER`…) e o secret `AWS_ROLE_ARN` ficam, nesse caso, no
+repositório principal, e a role OIDC precisa aceitar também o `sub` dele
+(`repo:<owner>/Projeto-PMA:ref:refs/heads/main`; [Runbook](runbook.md), passo 7).
 
 ## Configuração (uma vez por repositório de serviço)
 
@@ -74,7 +97,12 @@ branch `gh-pages` (`mkdocs gh-deploy`).
 | [`exchange-service`](https://github.com/canavero/exchange-service/actions) | CI/CD | ✅ | ⏭️ | ⏭️ |
 | [`auth`](https://github.com/canavero/auth/actions), [`account`](https://github.com/canavero/account/actions), [`exchange`](https://github.com/canavero/exchange/actions) | CI (interfaces) | ✅ | — | — |
 | [`platform`](https://github.com/canavero/platform/actions) | E2E e docs | ✅ | — | — |
+| [`Projeto-PMA`](https://github.com/EuMiguelll/Projeto-PMA/tree/main/.github/workflows) | exchange-py e E2E com o exchange-py | 🖥️ | 🖥️ | ⏭️ |
 
+🖥️ = reproduzido localmente em 22/11/2026, passo a passo e com os mesmos comandos dos
+workflows, porque o Actions do `Projeto-PMA` está desligado (abaixo): `uv sync --frozen`, 37
+testes, ruff, `docker build`, o teste do contêiner do job *Imagem Docker* e o E2E com o stub
+(smoke test **18/18**); os workflows passam no `actionlint` (com `shellcheck`).
 ⏭️ = *skipped* de propósito: os jobs de imagem e deploy só ligam com as variáveis `AWS_ECR`/`EKS_CLUSTER`
 e a role OIDC. Para o deploy real, os mesmos passos rodaram à mão, com os mesmos comandos
 (`push-images.sh` → ECR, `deploy.sh`, `kubectl set image`), como mostram as
@@ -84,18 +112,19 @@ mínimo de AWS.
 
 ### E2E hermético
 
-O E2E sobe a plataforma inteira com `docker compose` e roda o smoke test pelo gateway (14
-verificações). No CI o `exchange` fala com um **stub** do PTAX do BACEN (nginx com respostas
-fixas, `setup/provider-stub/default.conf`), que devolve as cotações de `USD` e `EUR` e uma lista
-vazia para moedas desconhecidas (o exchange responde `404`), como a API real. O teste fica
-determinístico e não depende de rede externa. O stub nasceu quando o exchange ainda usava a
-AwesomeAPI, que devolvia `429` aos runners do GitHub sem API key; o PTAX real foi testado pelo
-mesmo smoke test no compose ([evidência](../evidencias/smoke-test.txt)).
+O E2E sobe a plataforma inteira com `docker compose` e roda o smoke test pelo gateway (18
+verificações, 6 do exchange). No CI o `exchange-py` fala com um **stub** da PTAX do BACEN
+(nginx com respostas fixas, `setup/provider-stub/default.conf`) que responde às mesmas URLs
+OData que o serviço chama: as cotações de `USD` e `EUR` em `CotacaoMoedaPeriodo`, uma lista
+vazia para moedas desconhecidas (o exchange responde `404`), como a API real, e a lista de
+`Moedas`. O teste fica determinístico e não depende de rede externa. O stub nasceu quando o
+exchange ainda usava a AwesomeAPI, que devolvia `429` aos runners do GitHub sem API key; a PTAX
+real foi testada pelo mesmo smoke test no compose ([evidência](../evidencias/exchange-py-ptax.txt)).
 
 ```bash
-EXCHANGE_PROVIDER_URL=http://provider-stub docker compose --profile e2e up -d --build \
+PTAX_URL=http://provider-stub docker compose --profile e2e up -d --build \
   db redis provider-stub account auth exchange gateway
-./scripts/smoke-test.sh   # 14/14
+./scripts/smoke-test.sh   # 18/18
 ```
 
 ## Boas práticas aplicadas
